@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BRL Command Center — Cold Outreach Cockpit</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#A01220">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BRL Command">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+ --navy:#A01220; --navy2:#BF1B2C; --paper:#FBF9F9; --card:#FFFFFF;
+ --amber:#FFFFFF; --amber-d:#7E0D18; --green:#1E7A4C; --red:#C43D2E;
+ --slate:#6B5A5D; --line:#EBDFE0; --ink:#2A1518;
+ --hot:#FFE3C9; --won:#DDF0E5; --dead:#EDEDED; --bad:#F9DFDD; --fresh:#E3F0E8; --fup:#FFF0D2; --cold:#E9E4F2; --nurt:#F2E4EA;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);font-size:13.5px}
+button{font-family:inherit;cursor:pointer}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+/* ---- rail ---- */
+.rail{background:var(--navy);color:#fff;padding:18px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.brand{padding:0 18px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand h1{font-family:'Barlow Condensed';font-weight:700;font-size:26px;letter-spacing:.5px;line-height:1}
+.brand h1 span{color:#FFD9DD}
+.brand p{font-size:10.5px;color:#F0C4C9;margin-top:4px;letter-spacing:.4px;text-transform:uppercase}
+.nav{margin-top:14px;flex:1}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:#F3D2D6;padding:11px 18px;font-size:13.5px;font-weight:500;border-left:3px solid transparent;text-align:left}
+.nav button.on{color:#fff;background:rgba(255,255,255,.12);border-left-color:#fff}
+.nav button:hover{color:#fff}
+.nav .cnt{margin-left:auto;background:#fff;color:var(--navy);font-weight:700;font-size:10.5px;border-radius:9px;padding:1px 7px}
+.railfoot{padding:12px 18px;font-size:10.5px;color:#E8B9BE;border-top:1px solid rgba(255,255,255,.12)}
+/* ---- main ---- */
+.main{padding:0 0 60px}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:12px 26px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5}
+.topbar .day{font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:.4px}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:3px}
+.badge.sat{background:var(--navy);color:#fff}
+.badge.lunch{background:var(--cold);color:var(--navy)}
+.topstats{margin-left:auto;display:flex;gap:20px}
+.topstats div{text-align:right}
+.topstats b{font-family:'Barlow Condensed';font-size:21px;font-weight:700;display:block;line-height:1}
+.topstats span{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--slate)}
+.wrap{padding:22px 26px;max-width:1240px}
+h2.sec{font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.6px;text-transform:uppercase;color:var(--navy);margin:22px 0 10px}
+h2.sec small{font-family:'Inter';font-size:11px;font-weight:500;color:var(--slate);text-transform:none;letter-spacing:0;margin-left:8px}
+/* ---- highway meter (signature) ---- */
+.road{background:var(--navy);border-radius:10px;padding:18px 22px 20px;color:#fff;position:relative;overflow:hidden}
+.road h3{font-family:'Barlow Condensed';font-size:15px;font-weight:600;letter-spacing:1.5px;color:#F3C6CB;text-transform:uppercase}
+.road .big{font-family:'Barlow Condensed';font-weight:700;font-size:44px;line-height:1;margin:2px 0 10px}
+.road .big em{font-style:normal;color:#FFD9DD}
+.lane{height:26px;background:#2B2B30;border-radius:5px;position:relative;border:1px solid #46464E}
+.lane .fill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,#F4F4F4,#FFFFFF);border-radius:4px;transition:width .6s;box-shadow:0 0 8px rgba(255,255,255,.5)}
+.lane .dash{position:absolute;top:50%;left:0;right:0;height:0;border-top:3px dashed rgba(255,255,255,.55);transform:translateY(-50%);pointer-events:none}
+.lane .truck{position:absolute;top:-13px;font-size:19px;transition:left .6s;transform:translateX(-50%)}
+.roadrow{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.mini{flex:1;min-width:110px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:9px 12px}
+.mini b{font-family:'Barlow Condensed';font-size:24px;font-weight:700;display:block;line-height:1}
+.mini span{font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:#F0C4C9}
+.mini .gap{font-size:10.5px;font-weight:700}
+.gap.ok{color:#6FCF97}.gap.no{color:#FF8A73}
+/* ---- queues ---- */
+.queues{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.q h4{font-family:'Barlow Condensed';font-size:14.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 13px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.q.due h4{background:var(--fup)}.q.retry h4{background:var(--cold)}.q.fresh h4{background:var(--fresh)}.q.over h4{background:var(--bad);color:var(--red)}
+.q ul{list-style:none;max-height:250px;overflow:auto}
+.q li{padding:8px 13px;border-bottom:1px solid var(--line);font-size:12.5px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.q li:last-child{border-bottom:0}
+.q li .co{font-weight:600;cursor:pointer}
+.q li .co:hover{color:var(--navy2)}
+.q li small{color:var(--slate);display:block;font-size:11px}
+.q .empty{padding:14px;color:var(--slate);font-size:12px}
+/* ---- table ---- */
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,textarea{font-family:'Inter';font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--navy2);outline-offset:0}
+.btn{border:0;border-radius:6px;padding:8px 13px;font-weight:600;font-size:12.5px}
+.btn.amber{background:var(--navy);color:#fff}
+.btn.amber:hover{background:#F6E7E9}
+.btn.navy{background:var(--navy);color:#fff}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--navy)}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+th{font-family:'Barlow Condensed';font-size:12.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:var(--navy);color:#fff;padding:8px 10px;text-align:left}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.lead{cursor:pointer}
+tr.lead:hover td{background:#FBEFF0}
+.st{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.st.HOT{background:var(--hot);color:#8A4B00}.st.OPEN{background:#EEF1F5;color:var(--slate)}
+.st.FRESH{background:var(--fresh);color:var(--green)}.st.DEAD{background:var(--dead);color:#777}
+.st.BADDATA{background:var(--bad);color:var(--red)}.st.PARKED{background:var(--dead);color:#777}
+.st.FOLLOWUP{background:var(--fup);color:#8A6A00}.st.WON{background:var(--won);color:var(--green)}
+.st.COLD{background:var(--cold);color:var(--navy)}.st.NURTURE{background:var(--nurt);color:#6B4E8E}
+/* ---- drawer ---- */
+.drawer{position:fixed;top:0;right:-560px;width:540px;max-width:96vw;height:100vh;background:#fff;box-shadow:-8px 0 30px rgba(16,35,63,.25);transition:right .25s;z-index:20;display:flex;flex-direction:column}
+.drawer.open{right:0}
+.dhead{background:var(--navy);color:#fff;padding:16px 20px}
+.dhead h3{font-family:'Barlow Condensed';font-size:24px;font-weight:700;letter-spacing:.4px}
+.dhead p{font-size:12px;color:#F3CBD0;margin-top:2px}
+.dhead .x{position:absolute;top:12px;right:16px;background:none;border:0;color:#fff;font-size:20px}
+.dbody{padding:16px 20px;overflow:auto;flex:1}
+.frow{margin-bottom:12px}
+.frow label{display:block;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--slate);margin-bottom:4px}
+.frow select,.frow input,.frow textarea{width:100%}
+.actbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:6px 0 14px}
+.act{border-radius:8px;border:1.5px solid var(--line);background:#fff;padding:10px 6px;text-align:center;font-weight:700;font-size:13px}
+.act span{display:block;font-size:9.5px;font-weight:600;color:var(--slate);letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+.act.call{border-color:var(--green);color:var(--green)}
+.act.mail{border-color:var(--navy);color:var(--navy)}
+.act.wa{border-color:#1FA855;color:#1FA855}
+.act:hover{background:#FBEFF0}
+.hist{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:12px;color:#3C4A5C;max-height:120px;overflow:auto}
+.savedtick{font-size:11px;color:var(--green);font-weight:600}
+/* ---- pipeline ---- */
+.funnel{max-width:760px;margin:6px auto 0}
+.fstage{margin:0 auto 10px;color:#fff;border-radius:8px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;min-width:220px;transition:transform .15s}
+.fstage:hover{transform:scale(1.015)}
+.fstage b{font-family:'Barlow Condensed';font-size:26px;font-weight:700}
+.fstage span{font-size:11px;letter-spacing:.8px;text-transform:uppercase;font-weight:700}
+.fstage small{font-size:10.5px;opacity:.85;display:block;font-weight:500;text-transform:none;letter-spacing:0}
+.fconv{text-align:center;font-size:11px;color:var(--slate);margin:-4px 0 8px;font-weight:600}
+.leak{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.leak .card{text-align:center;cursor:pointer}
+.leak b{font-family:'Barlow Condensed';font-size:26px;display:block}
+/* ---- import ---- */
+.drop{border:2px dashed var(--slate);border-radius:10px;padding:34px;text-align:center;background:#fff;color:var(--slate)}
+.drop.hover{border-color:var(--navy);background:#FBEFF0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:16px}
+.card h3{font-family:'Barlow Condensed';font-size:16px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.note{font-size:11.5px;color:var(--slate);line-height:1.5}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:50;display:none}
+.pill{display:inline-block;background:#EEF1F5;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--slate);margin:2px 4px 2px 0;border:1px solid var(--line);cursor:pointer}
+.pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+@media(max-width:880px){
+ .app{grid-template-columns:1fr}
+ .rail{position:fixed;bottom:0;top:auto;height:auto;width:100%;flex-direction:row;padding:0;z-index:30}
+ .brand,.railfoot{display:none}
+ .nav{display:flex;margin:0;width:100%}
+ .nav button{flex-direction:column;gap:2px;padding:9px 4px;font-size:10px;border-left:0;border-top:3px solid transparent;justify-content:center;align-items:center}
+ .nav button.on{border-top-color:var(--amber)}
+ .nav .cnt{display:none}
+ .main{padding-bottom:80px}
+ th{top:0}
+ .grid2{grid-template-columns:1fr}
+}
+</style></head>
+<body>
+<div class="app">
+<aside class="rail">
+ <div class="brand"><h1>BRL <span>COMMAND</span></h1><p>Cold Outreach Cockpit · Best Roadways</p></div>
+ <nav class="nav" id="nav"></nav>
+ <div class="railfoot">Mon–Sat · 9:30–18:00 · Lunch 1–2<br>Targets 40·20·10·5·1<br><a href="/logout" style="color:#F3D2D6;text-decoration:underline">Log out</a></div>
+</aside>
+<main class="main">
+ <div class="topbar">
+  <button id="backBtn" onclick="goBack()" style="display:none;background:none;border:1px solid var(--line);border-radius:6px;padding:5px 10px;margin-right:10px;cursor:pointer;font-size:13px;color:var(--ink)">← Back</button>
+  <div class="day" id="topDay"></div>
+  <span class="badge" id="demoBadge" style="display:none;background:#2A1518;color:#FFE3C9;font-weight:700">🧪 DEMO MODE — not saved</span>
+  <span class="badge sat" id="satBadge" style="display:none">Saturday — plant leads only</span>
+  <span class="badge lunch" id="lunchBadge" style="display:none">Lunch 1–2 PM</span>
+  <div class="topstats" id="topStats"></div>
+ </div>
+ <div class="wrap" id="view"></div>
+</main>
+</div>
+<div class="drawer" id="drawer"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= STORAGE POLYFILL (server-backed KV) =================
+   Replaces the Claude-artifact-only `window.storage` with calls to our
+   own tiny Express API (see server.js). Same get/set contract, so the
+   DATA LAYER code below needs zero changes. */
+window.storage = {
+  async get(key){
+    const r = await fetch('/api/kv/' + encodeURIComponent(key));
+    if(!r.ok) throw new Error('kv-get-failed:' + r.status);
+    return await r.json(); // {value: "..."}
+  },
+  async set(key, value){
+    const r = await fetch('/api/kv/' + encodeURIComponent(key), {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({value})
+    });
+    if(!r.ok) throw new Error('kv-set-failed:' + r.status);
+    return await r.json();
+  }
+};
+
+/* ================= DATA LAYER ================= */
+const SEED = [{"id":1,"camp":"Bharuch Belt (46-lead call list)","co":"BASF","name":"Ronak Sheth","desig":"Asst Mgr – Warehouse","loc":"Ankleshwar","mob":"+91 96876 36576","em":"","sat":true,"hist":"No call logged yet — BASF win-back held for Suyashh coordination","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":2,"camp":"Bharuch Belt (46-lead call list)","co":"Meghmani","name":"Krunal Patel","desig":"Dy Mgr – Logistics","loc":"Ankleshwar","mob":"+91 94276 15515 (NEW 23-Jul)","em":"krunal.patel@meghmani.com","sat":true,"hist":"Number out of service","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":3,"camp":"Bharuch Belt (46-lead call list)","co":"PI Industries","name":"Mahendra Dhatarwal","desig":"Sr Mgr – Stores & Logistics","loc":"Ankleshwar","mob":"+91 96283 73921","em":"","sat":true,"hist":"Invalid number","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":4,"camp":"Bharuch Belt (46-lead call list)","co":"Meghmani","name":"Hitesh Patel","desig":"Sr Mgr – Logistics","loc":"Bharuch","mob":"+91 99046 71254 / +91 76000 33524","em":"","sat":true,"hist":"99046 71254: left Meghmani, now into farming · 76000 33524: wrong number — DEAD LEAD · Email reply 22-Jun (Bharuch thread): left Meghmani / wrong number","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":5,"camp":"Bharuch Belt (46-lead call list)","co":"Indofil","name":"Parth Vakil","desig":"Logistics Manager","loc":"Bharuch","mob":"+91 99135 94200","em":"","sat":true,"hist":"FY contract already finalized; asked for profile; reconnect DEC-26 (contract expires Feb-27) · Email reply 22-Jun: contract finalized, reconnect Dec","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":6,"camp":"Bharuch Belt (46-lead call list)","co":"Lubrizol","name":"Bhavik Patel","desig":"SCM","loc":"Bharuch","mob":"+91 97128 90175","em":"","sat":true,"hist":"Wrong number","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":7,"camp":"Bharuch Belt (46-lead call list)","co":"OPaL","name":"Himesh Gohil","desig":"Dy GM – Marketing Logistics","loc":"Bharuch","mob":"+91 90990 09925","em":"","sat":true,"hist":"Ongoing 3-year contract ending 2030 — parked","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":8,"camp":"Bharuch Belt (46-lead call list)","co":"OPaL","name":"Shah Niral","desig":"Sr Mgr – Materials","loc":"Bharuch","mob":"+91 99740 66480","em":"","sat":true,"hist":"07-Jul: 2-year transport contract done 6 months ago — parked","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":9,"camp":"Bharuch Belt (46-lead call list)","co":"DCM Shriram","name":"Saurabh Jain","desig":"Mgr – RM & Packaging","loc":"Bharuch","mob":"+91 70737 68739","em":"","sat":true,"hist":"Hospitalized (07-Jul) — contact Mr Deepak 8708682440 / deepak.singh1@dcmshriram.com · 20-Jul: has requirement ex-Nhava Sheva, share profile · 09-Jul: profile email to Deepak Singh (dcmshriram.com) BOUNCED — recipient not found; verify address","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":10,"camp":"Bharuch Belt (46-lead call list)","co":"Hikal","name":"Yogesh Gohil","desig":"Warehouse Officer","loc":"Bharuch","mob":"+91 98795 58927","em":"","sat":true,"hist":"Ringing on every attempt (2,3,7,9,18,21 Jul) — switch to plant visit via Ankleshwar branch","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":11,"camp":"Bharuch Belt (46-lead call list)","co":"Gharda Chemicals","name":"Bhavik Patel","desig":"Manager","loc":"Bharuch","mob":"+91 98254 84407","em":"","sat":true,"hist":"FY contract finalized; reconnect DEC-26 (expires Mar-27)","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":12,"camp":"Bharuch Belt (46-lead call list)","co":"Deepak Nitrite","name":"Bhavesh A. Pandya","desig":"Sr Logistics Manager","loc":"Vagra","mob":"+91 70431 12005 / +91 94273 53211","em":"","sat":true,"hist":"70431 12005 doesn't exist · 94273 53211: Dahej-based, handles transport contracts — Nisarg (DPL) 7573949293/9979189611 is concerned person; 18-Jul: share profile · 09-Jul: profile to Nisarg (nlraj@godeepak.com) BOUNCED — address invalid","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":13,"camp":"Bharuch Belt (46-lead call list)","co":"Anupam Rasayan","name":"Miteshkumar Patel","desig":"Asst Logistics Manager","loc":"Surat","mob":"+91 98254 40871","em":"","sat":true,"hist":"They use their own vehicles — DEAD","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":14,"camp":"Bharuch Belt (46-lead call list)","co":"BASF","name":"Brahmanand K Mallik","desig":"Director – Supply Chain & Ops","loc":"Mumbai","mob":"+91 98336 40107","em":"","sat":false,"hist":"Ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":15,"camp":"Bharuch Belt (46-lead call list)","co":"BASF","name":"Amol Takke","desig":"EXIM, SC Operations","loc":"Thane","mob":"+91 99672 73038","em":"","sat":true,"hist":"Sits in Vikhroli; share profile; Mr Sarang (Vikhroli) looks after logistics — Amol ji to discuss meeting","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":16,"camp":"Bharuch Belt (46-lead call list)","co":"Saint-Gobain","name":"Anoop Anantha","desig":"Head of Supply Chain","loc":"Chennai","mob":"+91 96193 37560","em":"","sat":false,"hist":"Mr Pradeep handles logistics (Annu Anjan 9561001540) · 16-Jul: RFQ RECEIVED, rates quoted · 22-Jul: awaiting feedback","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":17,"camp":"Bharuch Belt (46-lead call list)","co":"Saint-Gobain","name":"Nitin Warwatkar","desig":"National Logistics Manager","loc":"Mumbai","mob":"+91 98907 81956","em":"","sat":false,"hist":"In-person meeting DONE 26-Jun (Andheri) with Suyashh sir · 21-Jul: RFQ received, rates shared · Email reply 23-Jun: in-person meeting confirmed 26-Jun 2 PM Andheri office","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":18,"camp":"Bharuch Belt (46-lead call list)","co":"Saint-Gobain","name":"Naresh More","desig":"National Mgr – Purchase & SC","loc":"Mumbai","mob":"+91 91678 73128","em":"","sat":false,"hist":"09-Jul: meeting done with Suyashh sir & Nitin; 21-Jul: RFQ received, rates shared","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":19,"camp":"Bharuch Belt (46-lead call list)","co":"PepsiCo","name":"Rinkesh Satija","desig":"VP – Supply Chain Ops","loc":"Gurgaon","mob":"+91 97691 10120","em":"rinkesh.satija@pepsico.com","sat":false,"hist":"09-Jul: attended & disconnected · 18/21-Jul: ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":20,"camp":"Bharuch Belt (46-lead call list)","co":"PepsiCo","name":"Jasdeep Singh","desig":"Sr Mgr – Supply Planning & Logistics","loc":"Gurugram","mob":"+91 87936 24034","em":"","sat":false,"hist":"NEW number +91 76984 33997; asked for company profile · 15-Jul: in meeting, call back · 09-Jul: PepsiCo profile mailer DELIVERED successfully","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":21,"camp":"Bharuch Belt (46-lead call list)","co":"PepsiCo","name":"Praveen Mishra","desig":"Global Procurement Mgr – Logistics","loc":"Bengaluru","mob":"+91 82913 93274","em":"","sat":false,"hist":"Family member answered — client unavailable","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":22,"camp":"Bharuch Belt (46-lead call list)","co":"Yokohama-ATG","name":"Ashish Sharma","desig":"Director – SCM","loc":"Bengaluru","mob":"+91 95010 10913","em":"","sat":false,"hist":"Now works at Sun Pharma, not Yokohama — DEAD; new door Vikalp Dixit","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":23,"camp":"Bharuch Belt (46-lead call list)","co":"Yokohama-ATG","name":"Aparnaa Pandit","desig":"Assoc Director – Logistics & SC","loc":"Maharashtra","mob":"+91 98207 58844","em":"","sat":false,"hist":"Vikhroli-based; 15-Jul: re-forward profile, she'll connect us to logistics person","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":24,"camp":"Bharuch Belt (46-lead call list)","co":"Yokohama-ATG","name":"Jinsha Pant","desig":"Logistics Manager","loc":"Mumbai","mob":"+91 99209 52127","em":"","sat":false,"hist":"Concerned person = Vikalp Dixit 9699775714 · 15-Jul Vikalp: share profile, will check & revert","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":25,"camp":"Bharuch Belt (46-lead call list)","co":"GFL (Gujarat Fluorochemicals)","name":"Malik Shah","desig":"Head – SCM","loc":"Gurgaon","mob":"+91 98630 22222 / +91 97698 68663","em":"","sat":false,"hist":"RFQ RECEIVED · rates shared · client counter is BELOW our market rate (20-Jul) · in-person meeting done by Rakesh ji · Email reply 23-Jun: 'RFQ received, working on it'","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":26,"camp":"Bharuch Belt (46-lead call list)","co":"GFL (Gujarat Fluorochemicals)","name":"Ajay Kumar Gupta","desig":"GM – SC Planning & Warehousing","loc":"Noida","mob":"+91 99996 59618","em":"ajaygupta@gfl.co.in","sat":false,"hist":"14-Jul: meeting done, RFQ, rates quoted — counter rates below market","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":27,"camp":"Bharuch Belt (46-lead call list)","co":"SRF","name":"Umang S Bhatnagar","desig":"Sr VP – Sourcing & SCM","loc":"Gurgaon","mob":"+91 98188 67779","em":"umangb@srf.com","sat":false,"hist":"Asked for company profile (Gurgaon) · 9/18/21-Jul ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":28,"camp":"Bharuch Belt (46-lead call list)","co":"Aarti Industries","name":"Mitesh Gangar","desig":"VP – Commercial","loc":"Mumbai","mob":"+91 82910 34802 / +91 96190 36484","em":"","sat":false,"hist":"Both numbers ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":29,"camp":"Bharuch Belt (46-lead call list)","co":"Aarti Industries","name":"Bodhee Dahiwale","desig":"GM – SC & Customer Service","loc":"Mumbai","mob":"+91 88790 99104","em":"","sat":false,"hist":"Add to email trail, will discuss with Vijay sir · 21-Jul: client sharing SPOT INQUIRIES","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":30,"camp":"Bharuch Belt (46-lead call list)","co":"Deepak Nitrite","name":"Jeetendra Patnaik","desig":"Head – SCM","loc":"Vadodara","mob":"+91 94398 04386","em":"","sat":false,"hist":"21-Jul: IN-PERSON MEETING FIXED 04-AUG (call back 31-Jul)","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":31,"camp":"Bharuch Belt (46-lead call list)","co":"Tata Chemicals","name":"Samir Shah","desig":"Head – SCM Mithapur","loc":"Jamnagar","mob":"+91 98249 94892 / +91 92270 32682","em":"","sat":false,"hist":"98249 94892: NO LONGER WITH TATA CHEMICALS · other no. out of service — DEAD, no email either · Email reply 23-Jun: no longer with Tata Chemicals","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":32,"camp":"Bharuch Belt (46-lead call list)","co":"Indofil","name":"Sandeep Suvarna","desig":"Intl Logistics Manager","loc":"Mumbai","mob":"+91 87791 53378","em":"","sat":false,"hist":"Meeting done 25-Jun · 09-Jul: seniors decided NOT to onboard new transporters, in-house only — DEAD · Email reply 23-Jun: Marol meeting fixed 25-Jun → later declined onboarding (in-house transporters only)","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":33,"camp":"Bharuch Belt (46-lead call list)","co":"Lubrizol","name":"Ajit Singh","desig":"Lead – CS/Logistics/Warehouse","loc":"Panvel","mob":"+91 91730 99992","em":"","sat":true,"hist":"Wrong number","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":34,"camp":"Bharuch Belt (46-lead call list)","co":"Huntsman","name":"Sameer Rane","desig":"SCM India Head","loc":"Mumbai","mob":"+91 98702 14917","em":"","sat":false,"hist":"No longer with Huntsman — DEAD","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":35,"camp":"Bharuch Belt (46-lead call list)","co":"Huntsman","name":"Pradeep Nair","desig":"Mgr – Logistics & EXIM","loc":"Mumbai","mob":"+91 91674 94913","em":"","sat":true,"hist":"Ringing → 18/21-Jul: disconnecting calls","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":36,"camp":"Bharuch Belt (46-lead call list)","co":"Huntsman","name":"Dinesh Bhere","desig":"Head – Ops & SC","loc":"Mumbai","mob":"+91 97694 28944","em":"","sat":false,"hist":"Not connecting → 18/21-Jul: disconnecting calls","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":37,"camp":"Bharuch Belt (46-lead call list)","co":"GACL","name":"Ashish Agrawal","desig":"Chief Mgr – Marketing/Dispatch","loc":"Vadodara","mob":"+91 99090 17124","em":"ashish.agrawal@gacl.co.in","sat":false,"hist":"Ringing across attempts · 18-Jul: disconnecting (busy?)","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":38,"camp":"Bharuch Belt (46-lead call list)","co":"Hindalco","name":"Sangeeth Kumar Viswanathan","desig":"Lead – SC & Planning","loc":"Mumbai","mob":"+91 96009 00224","em":"","sat":false,"hist":"PTL requirement Silvassa→pan-India + UP→pan-India · 20-Jul: in-person meeting this week 2nd half","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":39,"camp":"Bharuch Belt (46-lead call list)","co":"OPaL","name":"Souvik Bose","desig":"Mgr – Marketing Logistics","loc":"Vadodara","mob":"+91 90999 99313","em":"","sat":false,"hist":"Transport contract confirmed for next 3 years — parked","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":40,"camp":"Bharuch Belt (46-lead call list)","co":"DCM Shriram","name":"Yogesh Agrawal","desig":"Sr VP & Head SC","loc":"New Delhi","mob":"+91 94124 81045","em":"","sat":false,"hist":"Invalid number → 17-Jul: disconnecting calls · 21-Jul invalid. New DCM doors: Sanjay Chakrawarti said DO NOT CALL; Vivek Srivastava ringing · Email reply 24-Jun: invalid number","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":41,"camp":"Bharuch Belt (46-lead call list)","co":"Hikal","name":"Parasuram S Chavakula","desig":"VP & Head – Supply Chain","loc":"Mumbai","mob":"+91 82916 64671 / +91 98203 52124","em":"","sat":false,"hist":"Was in China · 18-Jul: call back 2ND WEEK AUG — new Logistics Head joining Hikal · Email reply 24-Jun (T2): in China, returns next week — will call 1st week July","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":42,"camp":"Bharuch Belt (46-lead call list)","co":"NOCIL","name":"Sanjay S Ratuuri","desig":"HOD – Supply Chain","loc":"Mumbai","mob":"+91 79022 36926 (NEW) / +91 97572 89981","em":"sanjay.raturi@nocil.com","sat":false,"hist":"Wrong number / incoming barred / 21-Jul invalid — DEAD number · Email reply 24-Jun: wrong number","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":43,"camp":"Bharuch Belt (46-lead call list)","co":"Time Technoplast","name":"Amit Jadhav","desig":"Sr Mgr – Logistics & SC","loc":"Mumbai","mob":"+91 98336 14916 / +91 95949 97048","em":"","sat":false,"hist":"Chakala-based, READY TO WORK, no meeting needed · getting spot inquiries regularly · 20-Jul: rate gap ₹7–8k vs their target · Email reply 24-Jun: one no. out of service; Chakala-based, ready to work without meeting","status":"HOT","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":44,"camp":"Bharuch Belt (46-lead call list)","co":"Borosil Renewables","name":"Kannan Mahadevan","desig":"Mgr – Import Logistics","loc":"Thane","mob":"+91 98195 71232","em":"","sat":false,"hist":"HOLD maintained — no call (Borosil escalation). Note: Borosil daily bidding handled by Pavan/Sameer","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":45,"camp":"Bharuch Belt (46-lead call list)","co":"Sudarshan (Heubach)","name":"Shrikant Pade","desig":"Head – Warehousing & Logistics","loc":"Navi Mumbai","mob":"+91 99232 54059","em":"","sat":false,"hist":"EXCLUDED — existing client","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":46,"camp":"Vadodara re-enrichment","co":"GSFC","name":"Mayur Shah","desig":"Chief of Materials Management","loc":"Vadodara","mob":"+91 98240 19715 / Dir +91 79 2217 1299","em":"","sat":false,"hist":"14-Jul: 'transportation not required' and hung up — DEAD","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":47,"camp":"Vadodara re-enrichment","co":"Apollo Tyres","name":"Pradeep Pareek","desig":"Divisional Head of Logistics","loc":"Vadodara","mob":"+91 93761 60284","em":"pradeep.pareek@apollotyres.com","sat":false,"hist":"14-Jul: doesn't handle transportation; will check with team & share the right contact","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":48,"camp":"Vadodara re-enrichment","co":"Voltamp Transformers","name":"Bhargav Shah","desig":"Asst Mgr – Excise & Logistics","loc":"Vadodara","mob":"+91 99099 16587","em":"","sat":false,"hist":"14-Jul: ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":49,"camp":"Vadodara re-enrichment","co":"GFL (Gujarat Fluorochemicals)","name":"Shishil Amin","desig":"Sr Executive – Logistics","loc":"Vadodara","mob":"+91 81418 44429 / Dir +91 265 619 8216","em":"","sat":true,"hist":"14-Jul: share company profile for meeting — call back Thursday","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":50,"camp":"Vadodara re-enrichment","co":"Transpek Industry","name":"Paresh Shaparia","desig":"AGM","loc":"Vadodara","mob":"+91 99982 15519","em":"paresh.shaparia@transpek.com","sat":false,"hist":"14-Jul: he's in technical dept — speak with Birju Joshi instead","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":51,"camp":"Vadodara re-enrichment","co":"20 Microns","name":"Gaurang Gandhi","desig":"GM – Purchase & Supply Chain","loc":"Vadodara","mob":"+91 85839 25313 (NEW 23-Jul) / Dir +91 2668 292 300","em":"gaurang@20microns.com","sat":false,"hist":"14-Jul: invalid number · 10/22-Jul: switched off","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":52,"camp":"Vadodara re-enrichment","co":"KP Group","name":"Ashutosh Singh","desig":"Dispatch Manager","loc":"Vadodara","mob":"— (email only)","em":"ashutosh.singh@kpgroup.co","sat":true,"hist":"No outcome logged yet (email-only contact)","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":53,"camp":"Vadodara re-enrichment","co":"Voltamp Transformers","name":"Prakash Naidu","desig":"Head – Tanking & Dispatch","loc":"Vadodara","mob":"— (email only)","em":"prakash@voltamptransformers.com","sat":true,"hist":"No outcome logged yet (email-only contact)","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":54,"camp":"Vadodara re-enrichment","co":"Transpek Industry","name":"Birju Joshi","desig":"Commercial/EXIM contact","loc":"Vadodara","mob":"+91 72270 88700 / Dir +91 265 670 0300 (NEW)","em":"birju.joshi@transpek.com","sat":true,"hist":"Ringing on 10, 14, 18, 22 Jul — was reviewing profile post-audit","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":55,"camp":"Pipe blitz — Kutch belt","co":"Welspun Corp","name":"Arun Saraf","desig":"Head – Admin & Logistics","loc":"Delhi","mob":"+91 88003 55344 / +91 98795 13676","em":"arun_saraf@welspun.com","sat":false,"hist":"'Not the concerned person, doesn't have the concerned person's contact' — need new Welspun door","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":56,"camp":"Pipe blitz — Kutch belt","co":"Welspun Corp","name":"Vivek Murarka","desig":"Dispatch Manager","loc":"Bharuch","mob":"+91 97277 10535 / +91 84604 31597","em":"","sat":true,"hist":"09-Jul: 9727710535 out of service / alt 8460431597 ringing · 21-Jul: invalid","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":57,"camp":"Pipe blitz — Kutch belt","co":"Man Industries","name":"Gobind Tekchandani","desig":"Head – Logistics & Port Operations","loc":"Mandvi, Kutch","mob":"+91 99798 87021","em":"","sat":true,"hist":"No outcome logged in tracker (blitz 9-Jul outcomes never filed) · Blitz-report check 09-Jul: NO EOD/tracker email received for pipe blitz — outcomes never emailed","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":58,"camp":"Pipe blitz — Kutch belt","co":"Man Industries","name":"Dominic Menezes","desig":"DGM – Shipping & Logistics","loc":"Mumbai HO","mob":"+91 98218 77900 / +91 99873 77900","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":59,"camp":"Pipe blitz — Kutch belt","co":"Ratnamani Metals & Tubes","name":"Kishan Pal","desig":"DGM – Logistics","loc":"Anjar","mob":"+91 98792 07570","em":"kishan.pal@ratnamani.com","sat":true,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":60,"camp":"Pipe blitz — Kutch belt","co":"Jindal SAW","name":"Hiren Raygagla","desig":"AGM – Dispatch & Logistics","loc":"Gandhidham","mob":"+91 97277 94820","em":"hiren.raygagla@jindalsaw.com","sat":true,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":61,"camp":"Pipe blitz — Kutch belt","co":"Jindal SAW","name":"Rajesh Bose","desig":"Sr Logistics Manager","loc":"Kolkata","mob":"+91 84207 87950","em":"rajesh.bose@jindalsaw.com","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":62,"camp":"Pipe blitz — Kutch belt","co":"Surya Roshni","name":"Chandra Singh Bohra","desig":"Chief Manager – Logistics","loc":"Delhi HQ","mob":"+91 96438 99078","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":63,"camp":"Pipe blitz — Kutch belt","co":"Surya Roshni","name":"Vijay Pandey","desig":"Logistics contact","loc":"Gwalior","mob":"— (not enriched)","em":"","sat":false,"hist":"Excluded from enrichment — not called","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":64,"camp":"Gandhidham agro & edible oil","co":"Cargill India","name":"Ritesh Bansal","desig":"Logistics decision maker","loc":"India","mob":"+91 96437 05459","em":"","sat":false,"hist":"No outcome logged in tracker (call slot 10-Jul)","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":65,"camp":"Gandhidham agro & edible oil","co":"Bunge India","name":"Santosh Mishra","desig":"Logistics decision maker","loc":"India","mob":"+91 78699 19608","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":66,"camp":"Gandhidham agro & edible oil","co":"Bunge India","name":"Dhanesh Sadashivan","desig":"Logistics decision maker","loc":"India","mob":"+91 99306 30640","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":67,"camp":"Gandhidham agro & edible oil","co":"Emami Agrotech","name":"Subhasis Ghosh","desig":"Logistics decision maker","loc":"India","mob":"+91 97129 28637","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":68,"camp":"Gandhidham agro & edible oil","co":"Cargill India","name":"Kumar Dave","desig":"Logistics / dispatch","loc":"Ahmedabad","mob":"+91 85111 19492","em":"","sat":true,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":69,"camp":"Gandhidham agro & edible oil","co":"Gokul Agro Resources","name":"Sujoy Banerjee","desig":"Asst Mgr – Commercial & Logistics","loc":"Haldia","mob":"+91 80011 27234 / +91 80010 12588","em":"","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":70,"camp":"Gandhidham agro & edible oil","co":"Emami Agrotech","name":"Devendra Singh","desig":"Supply Chain Manager","loc":"Delhi","mob":"+91 95990 22311","em":"devendra.singh@emamiagrotech.com","sat":false,"hist":"No outcome logged in tracker","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":71,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Satish Sharma","desig":"AVP – Supply Chain Management","loc":"Gurgaon","mob":"+91 98318 86273","em":"satish.sharma@acme.in","sat":false,"hist":"No outcome logged in tracker yet (Day-1 call plan 14-Jul)","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":72,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Rajneesh Sharma","desig":"VP – Procurement & Contracts","loc":"Gurgaon","mob":"+91 96323 90610","em":"","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":73,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Arnab Chakraborty","desig":"Sr Manager – SCM","loc":"Gurgaon","mob":"+91 98743 50721 / +91 90733 46743","em":"arnab.chakraborty@acme.in","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":74,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Dharmendra Sharma","desig":"Manager – Logistics & SC","loc":"Gurgaon","mob":"+91 99112 99594","em":"","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":75,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Vipul Jain","desig":"Manager – SCM","loc":"Delhi","mob":"+91 94132 12255","em":"vipul.jain@acme.in","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":76,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Priyabrata Bhattacharjee","desig":"Manager – SCM","loc":"Gurgaon","mob":"+91 96412 38660 / +91 90629 24245","em":"priyabrata.bhattacharjee@acme.in","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":77,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Kuldeep Mittal","desig":"Sr Executive – Logistics","loc":"Jaipur ⭐","mob":"+91 96368 20788","em":"","sat":true,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":78,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Hina Sharma","desig":"Sr Executive – Logistics","loc":"Gurgaon","mob":"+91 98189 27363","em":"hina.sharma@acme.in","sat":true,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":79,"camp":"ACME–Warivo–Trina (Mundra import)","co":"ACME Sun Power / ACME Group","name":"Vaibhav Balodhi","desig":"Dy Manager – Logistics","loc":"Delhi","mob":"— (email only)","em":"vaibhav.balodhi@acme.in","sat":false,"hist":"No outcome logged (email-only)","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":80,"camp":"ACME–Warivo–Trina (Mundra import)","co":"Warivo Electric Mobility","name":"Manish Yadav","desig":"Head – Logistics & Supply Chain","loc":"Ellenabad","mob":"+91 99535 61921 / +91 98112 21603","em":"","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":81,"camp":"ACME–Warivo–Trina (Mundra import)","co":"Warivo Electric Mobility","name":"Bhavay Garg","desig":"Director (Promoter)","loc":"Ellenabad","mob":"+91 72318 05808","em":"bhavaygarg@warivomotors.com","sat":false,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":82,"camp":"ACME–Warivo–Trina (Mundra import)","co":"Warivo Electric Mobility","name":"Parmod Saini","desig":"General Manager (Ellenabad Plant)","loc":"Ellenabad, HR","mob":"+91 70823 00134","em":"","sat":true,"hist":"No outcome logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":83,"camp":"ACME–Warivo–Trina (Mundra import)","co":"Trina Solar India","name":"Gaurav Mathur","desig":"Head of Sales – India/SAARC","loc":"India","mob":"+91 98187 51599","em":"gaurav.mathur@trinasolar.com","sat":false,"hist":"No outcome logged. Related: old Acme Solar door (Amresh Kumar) said 17-Jul 'no additional transporters needed'","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":84,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Prabhat Sharma","desig":"Manager – Facilities & Procurement","loc":"Delhi","mob":"+91 95993 82996","em":"prabhat.sharma@statkraft.com","sat":false,"hist":"15-Jul: brother attended, callback promised · 17-Jul: brother shared client no. — not connecting; other no. 'wrong number' · 21-Jul: 95993 82996 answered by 'Vinod of Vijay Engineering', doesn't know Prabhat — NUMBER BAD, go email · Email reply 15-Jul (Statkraft HOT LEAD thread): brother attended the call, requested callback — client unavailable","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":85,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Harish Kumar Thakur","desig":"Manager – Engg & Project Mgmt","loc":"Noida","mob":"+91 99662 02218 / +91 99854 78766","em":"harish.thakur@statkraft.com","sat":false,"hist":"15-Jul: BOTH numbers wrong (99662 02218 & 99854 78766) · Email reply 15-Jul: both numbers wrong","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":86,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Kuldeep Raj","desig":"Procurement Officer","loc":"Noida","mob":"— (email only)","em":"kuldeep.raj@statkraft.com","sat":true,"hist":"Email-only — no call","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":87,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Marius Barrett","desig":"Facility & Logistics Manager","loc":"Delhi","mob":"— (LinkedIn only)","em":"","sat":false,"hist":"LinkedIn/Dripify only","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":88,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Maheshwara Reddy","desig":"DGM – Projects","loc":"Mumbai","mob":"— (LinkedIn only)","em":"","sat":false,"hist":"LinkedIn only","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":89,"camp":"Khidrat (Statkraft India)","co":"Statkraft India","name":"Lalith Mogha","desig":"Head – Land Acquisition & Licenses","loc":"Delhi","mob":"— (LinkedIn only)","em":"","sat":false,"hist":"LinkedIn only","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":90,"camp":"Adhunik no-contact companies","co":"POSHS Metal (Poshs Cinoti group)","name":"Vijay Adsul","desig":"Sr Manager – Logistics","loc":"Pune","mob":"+91 98236 65168","em":"vijay@poshsmetal.com","sat":false,"hist":"Call scheduled 23-Jul per priority sheet — outcome pending · ADHUNIK email 21-Jul sent with priority sheet; 14-Jul call-block outcomes still pending from Jagruti","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":91,"camp":"Adhunik no-contact companies","co":"Kirloskar Electric","name":"Sachin Shirname","desig":"Dy Manager – Purchasing","loc":"Maharashtra","mob":"+91 97665 20009","em":"sachin.shirname@kirloskarelectric.com","sat":false,"hist":"Call scheduled 23-Jul — pending","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":92,"camp":"Adhunik no-contact companies","co":"Kirloskar Electric","name":"Swapnil Desai","desig":"Materials Manager","loc":"India","mob":"+91 99701 00003 / +91 96898 97550","em":"swapnil.desai@kirloskar-electric.com","sat":false,"hist":"Backup — call only if Sachin doesn't convert","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":93,"camp":"Adhunik no-contact companies","co":"MEVA Formwork Systems","name":"Vaibhav Patil","desig":"Manager – Procurement & QC","loc":"Thane","mob":"+91 82685 69512","em":"v.patil@meva.net","sat":false,"hist":"Call scheduled 24-Jul — pending","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":94,"camp":"Adhunik no-contact companies","co":"MEVA Formwork Systems","name":"Himanshu Joshi","desig":"Executive Director (India)","loc":"Thane","mob":"+91 88795 38832","em":"h.joshi@meva.net","sat":false,"hist":"Suyashh to email director-to-director — no cold call","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":95,"camp":"Adhunik no-contact companies","co":"EWAC Alloys (L&T group)","name":"Bhautik Khunt","desig":"Asst Procurement Manager","loc":"Surat","mob":"+91 90331 44265","em":"bhautik.khunt@ewacalloys.com","sat":true,"hist":"Call scheduled — pending","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":96,"camp":"Adhunik no-contact companies","co":"Godrej Körber Supply Chain","name":"Amol Khurpe","desig":"Asst Manager – Procurement","loc":"Thane","mob":"+91 96994 17711 / +91 86555 90345","em":"amol.khurpe@godrejkoerber.com","sat":false,"hist":"Call scheduled — pending","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":97,"camp":"Adhunik no-contact companies","co":"Desmet Ballestra (India)","name":"Venkatesha S","desig":"Head – Procurement & Logistics (India)","loc":"Bengaluru","mob":"— (email only)","em":"venkateshas@desmetballestra.com","sat":false,"hist":"Email route — pending","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":98,"camp":"Adhunik no-contact companies","co":"Holtec Asia","name":"— not found —","desig":"—","loc":"—","mob":"—","em":"","sat":false,"hist":"Ask Manoj ji for plant walk-in","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":99,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Schwing Stetter India","name":"Arun Sadasivam ⭐","desig":"AGM – Planning & Materials","loc":"Chengalpattu","mob":"+91 91766 06169","em":"arun.s@schwingstetterindia.com","sat":true,"hist":"Ringing (multiple attempts 20–21 Jul) · Email reply 21-Jul (v5 thread): ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":100,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Schwing Stetter India","name":"Senthilnathan P","desig":"Asst Mgr – Material Planning","loc":"Chennai","mob":"Direct +91 44 3717 8907","em":"senthilnathan.t@schwingstetterindia.com","sat":false,"hist":"Direct line busy — retry · Email reply 21-Jul: line busy","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":101,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Schwing Stetter India","name":"Subramanian Venkatarathinam","desig":"Dy Mgr – Logistics & Commercial","loc":"Chennai","mob":"+91 91766 06139","em":"","sat":false,"hist":"RETIRED (spoke 21-Jul) — drop · Email reply 21-Jul: retired","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":102,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Schwing Stetter India","name":"Sivakumar K","desig":"President – Procurement","loc":"Chennai","mob":"— (no data yet)","em":"","sat":false,"hist":"No number yet — Suyashh LinkedIn connect","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":103,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"HBL Engineering","name":"Atluru Narendra Kumar ⭐","desig":"Sr Manager – SCM","loc":"Telangana","mob":"— (email only)","em":"atluru.kumar@hbl.com","sat":false,"hist":"Email-only — no call logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":104,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"HBL Engineering","name":"Balaji Alla","desig":"Sr Exec – Logistics","loc":"Gujarat","mob":"+91 89222 58161","em":"balaji.alla@hbl.in","sat":true,"hist":"Invalid number — email only · Email reply 21-Jul: invalid number","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":105,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"HBL Engineering","name":"Vittal Naik K","desig":"Manager – SCM (Medak plant)","loc":"Medak","mob":"— (email only)","em":"vittal.naikk@hbl.com","sat":true,"hist":"Email-only — no call logged","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":106,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Powerica","name":"Menon Venugopal ⭐","desig":"Chief Commercial Officer","loc":"Mumbai","mob":"+91 98201 01391","em":"venu@powericaltd.com","sat":false,"hist":"Client disconnecting calls — Suyashh to take personally · Email reply 21-Jul: disconnecting calls","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":107,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Powerica","name":"Prasannakumar Kolte","desig":"Head – Procurement & Engineering","loc":"Pune/Mumbai","mob":"+91 82089 85201","em":"prasannakumar.k@powericaltd.com","sat":false,"hist":"Spoke — NOT the concerned person for logistics · Email reply 21-Jul: not the concerned person","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":108,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Powerica","name":"Vijay Chhapta","desig":"Sr Mgr – Materials & Stores","loc":"Silvassa","mob":"+91 73593 13151","em":"vijay.chhapta@powericaltd.com","sat":true,"hist":"Number not in service — email only · Email reply 21-Jul: not in service","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":109,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Sudhir Power","name":"Godhraj Gurjar","desig":"Purchase Manager","loc":"NCR","mob":"+91 98108 98475 / +91 99994 17555","em":"godhraj@sudhirpower.com","sat":false,"hist":"20-Jul: 98108 not connecting / 99994 ringing (pre-correction) — retry post 21-Jul Lusha refresh","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":110,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Sudhir Power","name":"Subhor Tyagi","desig":"Sr Manager – Procurement","loc":"Gurgaon","mob":"+91 77039 22530","em":"","sat":false,"hist":"Ringing · incoming from 8130592011: not the concerned person, will share the right contact · Email reply 21-Jul: ringing; concerned person's number promised","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":111,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Sudhir Power","name":"Sumit Goel ⭐","desig":"Procurement Manager","loc":"Delhi","mob":"+91 72919 96976 / +91 93110 36333","em":"sumitgoel@sudhirpower.com","sat":false,"hist":"Both numbers dead (out of service / doesn't exist) — email only, route via Godhraj · Email reply 21-Jul: both numbers dead → Suyashh ran Lusha, routed via Godhraj Gurjar","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":112,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Paragon Footwear","name":"Nirmal Gopi ⭐","desig":"AGM – Supply Chain","loc":"Bengaluru","mob":"+91 98454 53421 / +91 95914 48484","em":"nirmalgopi@paragonfootwear.com","sat":false,"hist":"98454: disconnecting · 95914: ringing — keep trying, festive window · Email reply 21-Jul: disconnecting / ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":113,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Paragon Footwear","name":"Pavan Kumar J","desig":"SCM Analyst","loc":"Bengaluru","mob":"+91 90103 23930","em":"","sat":false,"hist":"Not the concerned person — hung up · Email reply 21-Jul: not concerned, hung up","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":114,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Haldiram's (Snacks Food)","name":"Mukesh Khandelwal ⭐","desig":"VP – Supply Chain","loc":"Noida","mob":"+91 92143 15464","em":"mukesh.khandelwal@haldiram.com","sat":false,"hist":"Switched off — retry evening · Email reply 21-Jul: switched off","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":115,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Haldiram's (Foods Intl)","name":"Adesh Tyagi Kumar ⭐","desig":"Head of Logistics","loc":"Nagpur","mob":"+91 78385 99512 (wrong) → try UAE +971 6 534 2052","em":"adesh.tyagi@haldiram.com","sat":true,"hist":"78385 99512 wrong number — try UAE line / email · Email reply 21-Jul: wrong number → Suyashh sent UAE line + email route","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":116,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Haldiram's (Foods Intl)","name":"Himanshu Wagh","desig":"Sr Export SC & Logistics Mgr","loc":"Nagpur","mob":"+91 96079 99401","em":"himanshu.wagh@haldirams.com","sat":true,"hist":"Number not getting connected · Email reply 21-Jul: not connecting","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":117,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Haldiram's (Snacks Food)","name":"Manoj Kumar Arora","desig":"AGM – Supply Chain","loc":"Noida","mob":"+91 99996 75411","em":"","sat":false,"hist":"Ringing — keep retrying · Email reply 21-Jul: ringing","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":118,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Praj Industries","name":"Vivek Sukhatankar","desig":"VP – Projects & Execution","loc":"Pune","mob":"+91 98903 00260 / Dir +91 20 2424 3376","em":"viveksukhatankar@praj.net","sat":false,"hist":"New contact 21-Jul — no call logged yet. Note: Praj GM Umesh Ranade (16-Jul) said not his area; Yogesh Charate ringing","status":"FRESH","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":119,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Offshore Infrastructure","name":"Rajiv Sheth","desig":"(Decision maker)","loc":"India","mob":"— (email only)","em":"rsheth@offshoreinfra.com","sat":false,"hist":"21-Jul: 98331 43900 switched off / 88282 00089 not connecting — email only (rsheth@offshoreinfra.com)","status":"BAD DATA","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":120,"camp":"Prospect list v5 (Accts 20–25) + corrections","co":"Nippon Paint","name":"Raju Annamalai","desig":"(Logistics contact)","loc":"Tiruvallur","mob":"— (no data)","em":"","sat":false,"hist":"Wrong number — man named Jagdish answered","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":121,"camp":"Finolex Cables","co":"Finolex Cables","name":"Ram Niwas Nokhwal","desig":"Head of Supply Chain (ex-GM)","loc":"Pune","mob":"+91 80077 74846 / +91 93737 99990","em":"ram.nokhwal@finolex.com","sat":false,"hist":"15-Jul: both numbers ringing · Email reply 15-Jul (Finolex thread): both numbers ringing; Suyashh replied 'work on SPOT RFQ'","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":122,"camp":"Finolex Cables","co":"Finolex Cables","name":"Vishal Dalavi","desig":"Manager – SCM","loc":"Pune","mob":"(in Jagruti's 15-Jul reply thread)","em":"","sat":false,"hist":"15-Jul: transport contract finalized LAST MONTH — no current need; share profile, reconnect later · Email reply 15-Jul: contract done last month; profile requested","status":"PARKED","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":123,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"Songwon Specialty Chemicals","name":"Hardik Gandhi","desig":"Manager – Purchase & SCM","loc":"Ankleshwar","mob":"— (never revealed)","em":"","sat":true,"hist":"linkedin.com/in/hardik-gandhi-631968141","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":124,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"Ginni Filaments","name":"Vimesh Pandya","desig":"Sr Commercial Manager","loc":"Ankleshwar","mob":"— (never revealed)","em":"","sat":true,"hist":"linkedin.com/in/vimesh-pandya-56a57b20","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":125,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"Ginni Filaments","name":"Monika Batri","desig":"Asst Mgr – Export Mktg & Logistics","loc":"Noida","mob":"— (never revealed)","em":"","sat":true,"hist":"linkedin.com/in/monika-batri-52a2593b","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":126,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"Ginni Filaments","name":"Vinod Tiwari","desig":"Dy Manager – Purchase & Store","loc":"Delhi","mob":"— (never revealed)","em":"","sat":false,"hist":"linkedin.com/in/vinod-tiwari-963056a0","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":127,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"GRP Ltd","name":"Nayan Shah","desig":"GM – Materials","loc":"Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"linkedin.com/in/nayan-shah-72518b62","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":128,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"GRP Ltd","name":"Sonal Godse","desig":"Logistics Asst Manager","loc":"Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"linkedin.com/in/sonal-godse-735b732b2","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":129,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"GRP Ltd","name":"Pranav Upadhyay","desig":"Stores Officer","loc":"Bharuch","mob":"— (never revealed)","em":"","sat":true,"hist":"linkedin.com/in/pranav-upadhyay-41a423187","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":130,"camp":"Ankleshwar–Dahej lookalikes (LinkedIn-only)","co":"Astec LifeSciences","name":"Eugenio Fernandes","desig":"Import Export Manager","loc":"Mumbai","mob":"— (never revealed)","em":"","sat":true,"hist":"linkedin.com/in/eugenio-fernandes-061691124","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":131,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Hikal","name":"Parasuram Chavakula","desig":"VP & Head – Supply Chain","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":132,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Pidilite","name":"Sarfaraj Vora","desig":"Head – SCM","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":133,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Pidilite","name":"Krishan Bansal","desig":"Domestic Logistics","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":134,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Pidilite","name":"Rahul Bhosale","desig":"Export Logistics","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":true,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":135,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Gandhar Oil","name":"Sachin Dumbre","desig":"Import & Logistics","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":136,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Viswaat","name":"Vidnyan Gawand","desig":"DGM – Purchase & Comm. Logistics","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":137,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Alkyl Amines","name":"Vinod Cardoza","desig":"Head – Procurement & SC","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":138,"camp":"Taloja–Navi Mumbai belt (LinkedIn-only)","co":"Prasol Chemicals","name":"Shrikant Basarkar","desig":"VP – Supply Chain","loc":"Mumbai/Navi Mumbai","mob":"— (never revealed)","em":"","sat":false,"hist":"8 of 36 names recovered; rest in that chat's consolidated sheet","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":139,"camp":"Remediation (replacements)","co":"Yokohama-ATG (correct OHT entity)","name":"Aparnaa Pandit","desig":"Assoc Director – Logistics & SC","loc":"Maharashtra","mob":"+91 98207 58844","em":"apnaik@yokohama-oht.com","sat":false,"hist":"Correct ATG entity + email confirmed; she asked for profile re-send — email it today","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":140,"camp":"Remediation (replacements)","co":"Yokohama-ATG","name":"Mrugesh Bhurke","desig":"Logistics Manager","loc":"Mumbai","mob":"+91 98679 96342","em":"mbhurke@yokohama-oht.com","sat":false,"hist":"NEW — day-to-day logistics owner at correct ATG entity","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":141,"camp":"Remediation (replacements)","co":"Yokohama-ATG","name":"Saurabh Raghuwanshi","desig":"Assoc Director – SCM","loc":"Mumbai","mob":"+91 98193 23422","em":"","sat":false,"hist":"NEW — senior SCM door","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":142,"camp":"Remediation (replacements)","co":"Yokohama-ATG","name":"Siddhesh Nayak","desig":"Assoc Director – CS & Export SC","loc":"Mumbai","mob":"+91 96190 94177","em":"snayak@atgtire.com","sat":false,"hist":"NEW — export SC (Dahej exports angle)","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":143,"camp":"Remediation (replacements)","co":"Welspun Corp","name":"Manish Bansal","desig":"DGM – Procurement","loc":"GANDHIDHAM","mob":"+91 98289 55753","em":"manish_bansal2@welspun.com","sat":true,"hist":"NEW plant-level door — replaces Saraf (not concerned) & Murarka (dead)","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":144,"camp":"Remediation (replacements)","co":"Welspun Corp","name":"Loganathan Manikandan","desig":"Head – Procurement & Bulk RM","loc":"Mumbai","mob":"+91 86080 79409","em":"manikandan_loganathan@welspun.com","sat":false,"hist":"NEW — bulk RM inbound freight owner (ignore +1 number, DNC-flagged)","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":145,"camp":"Remediation (replacements)","co":"Tata Chemicals","name":"Promod Kumar","desig":"Head of Supply Chain (ex-Head Logistics)","loc":"Meerut","mob":"+91 92230 56327 / Dir +91 22 6643 7525","em":"","sat":false,"hist":"NEW — replaces Samir Shah (left company)","status":"DEAD","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":146,"camp":"Remediation (replacements)","co":"Tata Chemicals","name":"Manish Ramavat","desig":"Purchase Manager","loc":"Dwarka (Mithapur belt)","mob":"+91 92278 02353 / Dir +91 2892 675 519","em":"mramavat@tatachemicals.com","sat":true,"hist":"NEW — Mithapur plant-side door","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":147,"camp":"Remediation (replacements)","co":"Tata Chemicals","name":"Venkatadri Ranganathan","desig":"Chief Commercial Officer","loc":"Mumbai","mob":"+91 98219 43210","em":"venkatadri.kr@tatachemicals.com","sat":false,"hist":"NEW — CCO (data from 2020, verify) — Suyashh-level outreach","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":148,"camp":"Remediation (replacements)","co":"Nippon Paint India","name":"Shyam Sundar","desig":"DGM – Logistics & Distribution","loc":"Chennai","mob":"+91 95000 38244 / +91 93424 37946","em":"shyamsundar.pk@nipponpaint.co.in","sat":false,"hist":"NEW — replaces wrong-number Raju Annamalai; exact target title","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":149,"camp":"Remediation (replacements)","co":"Nippon Paint India","name":"Ravinder Sharma","desig":"Head – Supply Chain Planning","loc":"Delhi","mob":"+91 98712 82602","em":"ravinder.sharma@nipponpaint.co.in","sat":false,"hist":"NEW — North India SC planning head","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""},{"id":150,"camp":"Remediation (replacements)","co":"Huntsman","name":"Prashant Chavan","desig":"Manager – Supply Chain","loc":"Maharashtra","mob":"+91 99099 86485","em":"prashant.chavan@huntsman.com","sat":false,"hist":"NEW — replaces Sameer Rane (left); Bhere/Nair disconnecting","status":"OPEN","outcome":"","remarks":"","nextDate":"","lastCall":""}];
+const OUTCOMES = {
+ "📵 Ringing / no answer":{d:1,s:"OPEN",conn:false},
+ "❌ Invalid / not in service":{d:0,s:"BAD DATA",conn:false},
+ "📆 Client asked to call back":{d:null,s:"FOLLOW-UP",conn:true},
+ "📄 RFQ received — rates needed":{d:1,s:"HOT",conn:true,alert:"RFQ"},
+ "📎 Asked for company profile":{d:2,s:"FOLLOW-UP",conn:true},
+ "🤝 Meeting fixed / done":{d:2,s:"HOT",conn:true,alert:"MEETING"},
+ "🔕 Busy — retry later":{d:1,s:"OPEN",conn:false},
+ "✉️ Email / WhatsApp sent":{d:3,s:"FOLLOW-UP",conn:false},
+ "🚫 Client disconnecting calls":{d:7,s:"COLD",conn:false},
+ "🔌 Switched off":{d:1,s:"OPEN",conn:false},
+ "👉 Not concerned — referred someone":{d:1,s:"OPEN",conn:true},
+ "📃 Contract finalized — reconnect later":{d:null,s:"PARKED",conn:true},
+ "🏃 Person left company / retired":{d:0,s:"BAD DATA",conn:true},
+ "💰 Rates shared — awaiting feedback":{d:3,s:"HOT",conn:true},
+ "🛄 Will share spot inquiries":{d:15,s:"NURTURE",conn:true},
+ "🏢 Vendor registration in process":{d:7,s:"FOLLOW-UP",conn:true},
+ "🏥 Unavailable (travel/meeting/hospital)":{d:3,s:"OPEN",conn:false},
+ "☎️ Wrong number":{d:0,s:"BAD DATA",conn:false},
+ "🎯 WON — first load received":{d:0,s:"WON",conn:true,alert:"WON"},
+ "⛔ DEAD — no requirement / do not call":{d:0,s:"DEAD",conn:true}};
+const NEXTOPTS={"Tomorrow":1,"+2 days":2,"+3 days":3,"Next week (+7d)":7,"+15 days":15,"Next month (+30d)":30,"Dec-2026":"2026-12-01","Mar-2027":"2027-03-01"};
+// Sales funnel — 8 stages, tracked only to signature. Delivery/payment stays in ERP.
+const FUNNEL_STAGES=[
+ 'Intro Call Done','Meeting Fixed','Meeting Done','RFQ Received',
+ 'Proposal Sent','Negotiation Initiated','Negotiation Done','Agreement Signed'];
+const STAGE_COLORS=['#D46A74','#C2434F','#AD2735','#8E1420','#7A0F1A','#6B0A14','#4A0810','#1E7A4C'];
+const REVIVAL_STAGES=['Dead Fresh','Reconnect','Follow-Up','New Requirement','Quotation','Reactivated'];
+const REVIVAL_COLORS=['#8A8A8A','#6B8CAE','#4A6F94','#375A7F','#2C4A6B','#1E7A4C'];
+const STAGE0_COLOR='#8A8A8A'; // neutral grey — Stage 0 is "not started", not part of the 1–8 progression color scale
+// A Response can SUGGEST a stage move — never applies automatically. setOutcome()
+// asks for confirmation before touching L.stage/L.stageStatus.
+const OUTCOME_STAGE_SUGGEST={
+ "🤝 Meeting fixed / done":{stage:2,ss:'Completed'},
+ "📄 RFQ received — rates needed":{stage:4,ss:'Completed'},
+ "💰 Rates shared — awaiting feedback":{stage:5,ss:'Completed'},
+ "🎯 WON — first load received":{stage:8,ss:'Completed'},
+};
+// Default message templates — {placeholders} get filled in per-lead at send time.
+// Available placeholders: {name} {co} {mob} {desig} {loc} {profileUrl} {remarks} {hist} {sig}
+const DEFAULT_TPL={
+ email:{
+  PROFILE:{s:"Best Roadways Limited — Company Profile | {co}",b:"Dear {name},\n\nAs discussed, sharing our company profile. We are a 40-year-old asset-owned FTL company — 800+ owned vehicles, 65+ pan-India branches, and a 7,50,000 sq ft bonded warehouse at Nhava Sheva (JNPT).\n\nWe would welcome the opportunity to support {co}'s transportation requirements. May we schedule a brief call this week?\n\nPlease find our company profile attached.{sig}"},
+  CHASE:{s:"Following up — Best Roadways profile | {co}",b:"Dear {name},\n\nHope you had a chance to review our company profile. We would be glad to discuss how our owned fleet can support {co}. Could we get 15 minutes this week?{sig}"},
+  RATES:{s:"Gentle reminder — Best Roadways rates | {co}",b:"Dear {name},\n\nFollowing up on the rates we shared. We would value your feedback and are happy to discuss adjustments. May we schedule a quick call?{sig}"},
+  MEETING:{s:"Meeting confirmation — Best Roadways × {co}",b:"Dear {name},\n\nConfirming our upcoming meeting. Looking forward to discussing {co}'s transportation requirements. Please let us know if the time needs adjusting.{sig}"},
+  THANKYOU:{s:"Thank you — Best Roadways × {co}",b:"Dear {name},\n\nThank you for your time today. As discussed, we will follow up with the next steps shortly. We look forward to partnering with {co}.{sig}"},
+  ESCALATE:{s:"⚠️ ESCALATION — {co} ({name}) needs intervention",b:"Suyashh sir,\n\nEscalating this lead.\n\nCompany: {co}\nContact: {name} ({mob})\nToday's remarks: {remarks}\nHistory: {hist}\n\n— Jagruti"}
+ },
+ wa:{
+  PROFILE:"Dear {name}, greetings from Best Roadways Limited 🚛 Sharing our company profile as discussed — 40-year-old asset-owned FTL company, 800+ owned vehicles, 65+ branches, 7.5 lakh sq ft bonded warehouse at Nhava Sheva. Profile: {profileUrl} Would love to discuss {co}'s transport requirements. — Jagruti Bhandari",
+  FOLLOWUP:"Dear {name}, following up from Best Roadways — hope you had a chance to review our profile. Happy to discuss how our owned fleet can support {co}. Could we get 15 minutes this week? — Jagruti Bhandari",
+  RATES:"Dear {name}, gentle reminder from Best Roadways regarding the rates shared for {co}. We would value your feedback and are open to discussing adjustments. — Jagruti Bhandari",
+  MEETING:"Dear {name}, confirming our upcoming meeting from Best Roadways. Looking forward to discussing {co}'s transportation requirements. — Jagruti Bhandari"
+ }
+};
+let DB={leads:[],activity:[],settings:{
+ jagrutiEmail:"jagruti.bhandari@bestroadways.com",suyashhEmail:"sg@bestroadways.com",
+ ratesTeam:"vinod.saharan@bestroadways.com,shashikant.muduli@bestroadways.com",
+ profileUrl:"",maytapiProduct:"",maytapiPhone:"",maytapiKey:"",
+ tC:40,tE:20,tW:10,tM:5,tR:1,demoMode:false,waProvider:'none',masAuth:'',notifyNumber:'',redFlagDays:3,wonFlagDays:30,pipeView:'funnel',notifyEnabled:false,morningTime:'09:00',eodTime:'18:00'}};
+let storageOK=true;
+
+let LIVE_LEADS=[],LIVE_ACTIVITY=[],DEMO_LEADS=null,DEMO_ACTIVITY=null;
+function getDemoLeads(){if(!DEMO_LEADS)DEMO_LEADS=SEED.map(x=>({...x}));return DEMO_LEADS;}
+async function loadDB(){
+ if(!window.storage){storageOK=false;LIVE_LEADS=SEED.map(x=>({...x,src:'seed'}));LIVE_ACTIVITY=[];applyDataMode();return;}
+ try{const r=await window.storage.get('brl-leads');LIVE_LEADS=JSON.parse(r.value);}
+ catch(e){LIVE_LEADS=SEED.map(x=>({...x,src:'seed'}));try{await window.storage.set('brl-leads',JSON.stringify(LIVE_LEADS));}catch(e2){}}
+ try{const r=await window.storage.get('brl-activity');LIVE_ACTIVITY=JSON.parse(r.value);}catch(e){LIVE_ACTIVITY=[];}
+ try{const r=await window.storage.get('brl-settings');DB.settings={...DB.settings,...JSON.parse(r.value)};}catch(e){}
+ applyDataMode();
+}
+// LIVE mode only shows leads you actually added (Import / Add) — the original
+// 150-sample leads (src:'seed', or no src at all on older data) stay hidden
+// in Live, but remain untouched on disk (and in the daily backup) — only
+// DEMO mode ever shows the hardcoded sample.
+function applyDataMode(){
+ if(DB.settings.demoMode){DB.leads=getDemoLeads();DB.activity=DEMO_ACTIVITY=DEMO_ACTIVITY||[];}
+ else{DB.leads=LIVE_LEADS.filter(l=>l.src==='import'||l.src==='manual');DB.activity=LIVE_ACTIVITY;}
+}
+function setDataMode(mode){
+ const demo=mode==='demo';
+ if(demo===!!DB.settings.demoMode)return;
+ DB.settings.demoMode=demo;
+ applyDataMode();
+ saveDB('settings');
+ render();
+ toast(demo?'🧪 Showing DEMO data — nothing here is saved':'✅ Showing LIVE data — only leads you added');
+}
+function recoverLead(){
+ const q=($('#recoverQ').value||'').trim().toLowerCase();
+ const box=$('#recoverResult');
+ if(!q){box.style.color='var(--red)';box.textContent='Type a company name or mobile number first.';return;}
+ const hidden=LIVE_LEADS.filter(l=>l.src!=='import'&&l.src!=='manual');
+ const matches=hidden.filter(l=>(l.co||'').toLowerCase().includes(q)||(l.mob||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')));
+ if(!matches.length){box.style.color='var(--red)';box.textContent='No hidden lead matched that search.';return;}
+ if(matches.length>1){box.style.color='var(--red)';box.textContent=matches.length+' matches found ('+matches.map(m=>m.co).join(', ')+') — search something more specific, like the full mobile number.';return;}
+ matches[0].src='manual';
+ applyDataMode();saveDB('leads');render();
+ box.style.color='var(--green)';box.textContent='✅ "'+matches[0].co+' — '+matches[0].name+'" is now visible in Live.';
+}
+function recoverLead(){
+ const box=$('#recoverResult');const q=($('#recoverQ').value||'').trim().toLowerCase();
+ if(!q){box.style.color='var(--red)';box.textContent='Type a company name or mobile number first.';return;}
+ const hidden=l=>l.src!=='import'&&l.src!=='manual';
+ const matches=LIVE_LEADS.filter(l=>hidden(l)&&((l.co||'').toLowerCase().includes(q)||(l.mob||'').includes(q)||(l.name||'').toLowerCase().includes(q)));
+ if(!matches.length){box.style.color='var(--red)';box.textContent='No hidden lead matched that — it may already be visible, or was never added here.';return;}
+ if(matches.length>1){box.style.color='var(--slate)';box.textContent=matches.length+' matches found: '+matches.map(m=>m.co).join(', ')+' — narrow your search (try the full mobile number).';return;}
+ matches[0].src='manual';
+ applyDataMode();saveDB('leads');render();
+ box.style.color='var(--green)';box.textContent='✅ "'+matches[0].co+'" ('+matches[0].name+') is now visible in Live.';
+}
+async function saveDB(what){
+ if(!storageOK)return;
+ try{
+  if(DB.settings.demoMode){
+   // Demo mode: never write fake leads/activity over the real server data.
+   if(!what||what==='settings')await window.storage.set('brl-settings',JSON.stringify(DB.settings));
+   return;
+  }
+  // Always persist the FULL live array (LIVE_LEADS), not the filtered DB.leads
+  // view — so seed-origin leads stay safe on disk even while hidden from view.
+  // Saves fire immediately (no debounce) so a quick navigation away — e.g.
+  // tapping WhatsApp right after adding a lead — can never race past a pending write.
+  if(!what||what==='leads')await window.storage.set('brl-leads',JSON.stringify(LIVE_LEADS));
+  if(!what||what==='activity'){LIVE_ACTIVITY=DB.activity;await window.storage.set('brl-activity',JSON.stringify(DB.activity.slice(-2500)));}
+  if(!what||what==='settings')await window.storage.set('brl-settings',JSON.stringify(DB.settings));
+ }catch(e){toast('⚠ Save failed — retrying on next change');}
+}
+function logAct(lead,channel,type,detail){
+ DB.activity.push({t:Date.now(),id:lead?lead.id:0,co:lead?lead.co:'—',name:lead?lead.name:'—',ch:channel,ty:type,dt:detail||''});
+ saveDB('activity');refreshTop();
+}
+/* ================= HELPERS ================= */
+const $=s=>document.querySelector(s);
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
+function p10(m){const d=String(m||'').replace(/\D/g,'');return d.length>=10?d.slice(-10):'';}
+function todayKey(d){d=d||new Date();return d.toISOString().slice(0,10);}
+function fmtD(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});}
+function nextWorkDay(days){const d=new Date();while(days>0){d.setDate(d.getDate()+1);if(d.getDay()!==0)days--;}return todayKey(d);}
+function isSat(){return new Date().getDay()===6;}
+function stCls(s){return (s||'OPEN').replace(/[^A-Z]/g,'');}
+function esc(x){return String(x||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* ================= MESSAGES / TEMPLATES ================= */
+function tplStore(){
+ if(!DB.settings.tpl)DB.settings.tpl=JSON.parse(JSON.stringify(DEFAULT_TPL));
+ return DB.settings.tpl;
+}
+function fillTpl(str,L){
+ const sig="\n\nWarm regards,\nJagruti Bhandari\nBest Roadways Limited\n800+ owned vehicles · 65+ branches · Nhava Sheva bonded warehouse";
+ return String(str||'')
+  .replace(/\{name\}/g,L.name||"Sir/Ma'am")
+  .replace(/\{co\}/g,L.co||'')
+  .replace(/\{mob\}/g,L.mob||'')
+  .replace(/\{desig\}/g,L.desig||'')
+  .replace(/\{loc\}/g,L.loc||'')
+  .replace(/\{remarks\}/g,L.remarks||'—')
+  .replace(/\{hist\}/g,(L.hist||'').slice(0,300))
+  .replace(/\{profileUrl\}/g,DB.settings.profileUrl||'')
+  .replace(/\{sig\}/g,sig);
+}
+function emailTpl(kind,L){
+ const t=tplStore().email[kind]||DEFAULT_TPL.email[kind];
+ return{s:fillTpl(t.s,L),b:fillTpl(t.b,L)};
+}
+function waTpl(kind,L){
+ const t=tplStore().wa[kind]||DEFAULT_TPL.wa[kind];
+ return fillTpl(t,L);
+}
+/* ================= ACTIONS ================= */
+function doCall(id){const L=find(id);const ph=p10(L.mob);if(!ph){toast('No mobile on this lead');return;}
+ L.lastCall=todayKey();saveDB('leads');logAct(L,'CALL','Dial attempt','+91'+ph);
+ window.location.href='tel:+91'+ph;}
+function doEmail(id,kind){const L=find(id);
+ if(kind==='ESCALATE'){const t=emailTpl(kind,L);
+  window.open('mailto:'+DB.settings.suyashhEmail+'?cc='+encodeURIComponent(DB.settings.jagrutiEmail)+'&subject='+encodeURIComponent(t.s)+'&body='+encodeURIComponent(t.b));
+  logAct(L,'EMAIL','Escalation to Suyashh',DB.settings.suyashhEmail);toast('Escalation draft opened ✓');return;}
+ if(kind==='PROFILE'){sendProfileEmailReal(id);return;}
+ if(!L.em||L.em.indexOf('@')<0){toast('No email on this lead');return;}
+ const t=emailTpl(kind,L);
+ window.open('mailto:'+encodeURIComponent(L.em)+'?cc='+encodeURIComponent(DB.settings.suyashhEmail)+'&subject='+encodeURIComponent(t.s)+'&body='+encodeURIComponent(t.b));
+ logAct(L,'EMAIL',kind,L.em);toast('Email draft opened — hit send in Gmail ✓');}
+async function sendProfileEmailReal(id){
+ const L=find(id);
+ if(!L.em||L.em.indexOf('@')<0){toast('No email on this lead');return;}
+ const t=emailTpl('PROFILE',L);
+ toast('Generating PDF and sending…');
+ const mailtoFallback=()=>{
+  window.open('mailto:'+encodeURIComponent(L.em)+'?cc='+encodeURIComponent(DB.settings.suyashhEmail)+'&subject='+encodeURIComponent(t.s)+'&body='+encodeURIComponent(t.b));
+  logAct(L,'EMAIL','PROFILE (mailto fallback, no attachment)',L.em);
+ };
+ try{
+  const r=await fetch('/api/send-profile-email',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({to:L.em,cc:DB.settings.suyashhEmail,subject:t.s,body:t.b,co:L.co,name:L.name,industry:L.industry})});
+  if(r.ok){logAct(L,'EMAIL','PROFILE (PDF attached)',L.em);toast('✅ Email sent with PDF attached');return;}
+  const j=await r.json().catch(()=>({}));
+  toast('❌ '+(j.error||'Send failed')+' — opening a draft instead');
+  mailtoFallback();
+ }catch(e){
+  toast('❌ Request failed — opening a draft instead');
+  mailtoFallback();
+ }
+}
+async function sendProfilePdfWA(id){
+ const L=find(id);const ph=p10(L.mob);
+ if(!ph){toast('No mobile on this lead');return;}
+ toast('Generating PDF and sending…');
+ try{
+  const r=await fetch('/api/send-profile-whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({to:'91'+ph,co:L.co,name:L.name,industry:L.industry})});
+  if(r.ok){
+   const j=await r.json();
+   logAct(L,'WHATSAPP','PROFILE PDF ('+j.provider+', real document)',ph);
+   toast('✅ PDF sent via WhatsApp as a real document');
+   return;
+  }
+  const j=await r.json().catch(()=>({}));
+  toast('❌ '+(j.error||'Send failed')+' — opening WhatsApp manually instead');
+  window.open('https://wa.me/91'+ph+'?text='+encodeURIComponent('Company profile for '+(L.co||'')+' — Best Roadways Limited'));
+  logAct(L,'WHATSAPP','PROFILE PDF (send failed, opened manually)',ph);
+ }catch(e){
+  toast('❌ Request failed — opening WhatsApp manually instead');
+  window.open('https://wa.me/91'+ph);
+  logAct(L,'WHATSAPP','PROFILE PDF (network error, opened manually)',ph);
+ }
+}
+async function doWA(id,kind){
+ if(kind==='PROFILE')return sendProfilePdfWA(id);
+ const L=find(id);const ph=p10(L.mob);if(!ph){toast('No mobile on this lead');return;}
+ const msg=waTpl(kind,L);const s=DB.settings;
+ if(s.waProvider==='maytapi'&&s.maytapiProduct&&s.maytapiPhone&&s.maytapiKey){
+  try{
+   const r=await fetch('/api/wa-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:'https://api.maytapi.com/api/'+s.maytapiProduct+'/'+s.maytapiPhone+'/sendMessage',
+     headers:{'x-maytapi-key':s.maytapiKey},body:{to_number:'91'+ph,type:'text',message:msg}})});
+   if(r.ok){logAct(L,'WHATSAPP',kind+' (Maytapi auto)','91'+ph);toast('WhatsApp sent via Maytapi ✓');return;}
+  }catch(e){/* proxy/network error — fall through to wa.me */}
+ }
+ if(s.waProvider==='mas'&&s.masAuth){
+  try{
+   const r=await fetch('/api/wa-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:'https://app.messageautosender.com/api/v1/message/create',
+     headers:{'Authorization':s.masAuth,'accept':'application/json'},body:{receiverMobileNo:'91'+ph,message:[msg]}})});
+   if(r.ok){logAct(L,'WHATSAPP',kind+' (MAS auto)','91'+ph);toast('WhatsApp sent via Message Auto Sender ✓');return;}
+  }catch(e){/* proxy/network error — fall through to wa.me */}
+ }
+ window.open('https://wa.me/91'+ph+'?text='+encodeURIComponent(msg));
+ logAct(L,'WHATSAPP',kind+' (wa.me)','91'+ph);toast('WhatsApp opened with message ✓');}
+async function testWA(){
+ const s=DB.settings;const ph=p10($('#testMob').value);
+ const box=$('#testResult');
+ if(!ph){box.style.color='var(--red)';box.textContent='Enter a valid 10-digit mobile number above.';return;}
+ const msg='Test message from BRL Command Center — please ignore.';
+ box.style.color='var(--slate)';box.textContent='Sending…';
+ try{
+  let target=null;
+  if(s.waProvider==='maytapi'){
+   if(!s.maytapiProduct||!s.maytapiPhone||!s.maytapiKey){box.style.color='var(--red)';box.textContent='Maytapi fields above are incomplete.';return;}
+   target={url:'https://api.maytapi.com/api/'+s.maytapiProduct+'/'+s.maytapiPhone+'/sendMessage',headers:{'x-maytapi-key':s.maytapiKey},body:{to_number:'91'+ph,type:'text',message:msg}};
+  }else if(s.waProvider==='mas'){
+   if(!s.masAuth){box.style.color='var(--red)';box.textContent='Message Auto Sender Authorization value above is empty.';return;}
+   target={url:'https://app.messageautosender.com/api/v1/message/create',headers:{'Authorization':s.masAuth,'accept':'application/json'},body:{receiverMobileNo:'91'+ph,message:[msg]}};
+  }else{
+   box.style.color='var(--slate)';
+   box.textContent='"Send via" is set to Manual — opening WhatsApp with the test message instead.';
+   window.open('https://wa.me/91'+ph+'?text='+encodeURIComponent(msg));
+   return;
+  }
+  const r=await fetch('/api/wa-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(target)});
+  const t=await r.text();
+  box.style.color=r.ok?'var(--green)':'var(--red)';
+  box.textContent=(r.ok?'✅ Sent — ':'❌ Failed — ')+'HTTP '+r.status+'. '+t.slice(0,300);
+ }catch(e){
+  box.style.color='var(--red)';
+  box.textContent='❌ Request failed — proxy/network error. Detail: '+(e&&e.message?e.message:e);
+ }
+}
+async function testEmailPdf(){
+ const box=$('#testEmailResult');
+ const to=($('#testEmailTo').value||'').trim();
+ if(!to||to.indexOf('@')<0){box.style.color='var(--red)';box.textContent='Enter a valid email address above.';return;}
+ box.style.color='var(--slate)';box.textContent='Generating PDF and sending…';
+ try{
+  const r=await fetch('/api/send-profile-email',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({to,subject:'BRL Command Center — test email',body:'This is a test send with a real PDF attached, to confirm SMTP is working.',co:'Test Company',name:'Test',industry:''})});
+  const t=await r.text();
+  box.style.color=r.ok?'var(--green)':'var(--red)';
+  box.textContent=(r.ok?'✅ Sent — check the inbox at '+to+' for a real PDF attachment.':'❌ Failed — HTTP '+r.status+'. '+t.slice(0,300));
+ }catch(e){
+  box.style.color='var(--red)';
+  box.textContent='❌ Request failed — network error. Detail: '+(e&&e.message?e.message:e);
+ }
+}
+async function testDueListEmail(){
+ const box=$('#dueListEmailResult');
+ if(!DB.settings.dueListEmailTo){box.style.color='var(--red)';box.textContent='Enter at least one recipient above and save it first.';return;}
+ if(!DB.settings.aiProvider||!DB.settings.aiApiKey){box.style.color='var(--red)';box.textContent='Select an AI provider and enter its API key above first.';return;}
+ box.style.color='var(--slate)';box.textContent='Generating scripts and sending — this can take a bit if there are several due leads…';
+ try{
+  const r=await fetch('/api/send-due-list-email-test',{method:'POST'});
+  const j=await r.json().catch(()=>({}));
+  box.style.color=r.ok?'var(--green)':'var(--red)';
+  box.textContent=r.ok?'✅ Sent to '+DB.settings.dueListEmailTo+' (CC: '+(DB.settings.suyashhEmail||'—')+').':'❌ '+(j.error||'Failed — HTTP '+r.status);
+ }catch(e){
+  box.style.color='var(--red)';
+  box.textContent='❌ Request failed — network error. Detail: '+(e&&e.message?e.message:e);
+ }
+}
+async function sendMorningNotification(){
+ const box=$('#notifyResult');
+ const ph=p10(DB.settings.notifyNumber);
+ if(!ph){box.style.color='var(--red)';box.textContent='Enter a valid 10-digit number above and save it first.';return;}
+ const q=queues();
+ const dueToday=q.due.length+q.retry.length;
+ const overdue=q.over.length;
+ const freshDial=q.fresh.length;
+ const dateStr=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'short'});
+ const msg='🌅 Morning Update — '+dateStr+'\n\n'+
+  '📞 Due Today: '+dueToday+'\n'+
+  '⏰ Overdue: '+overdue+'\n'+
+  '🆕 Fresh Dial: '+freshDial+'\n\n'+
+  'Open BRL Command Center to get started.';
+ box.style.color='var(--slate)';box.textContent='Sending…';
+ const s=DB.settings;
+ try{
+  let target=null;
+  if(s.waProvider==='maytapi'&&s.maytapiProduct&&s.maytapiPhone&&s.maytapiKey){
+   target={url:'https://api.maytapi.com/api/'+s.maytapiProduct+'/'+s.maytapiPhone+'/sendMessage',headers:{'x-maytapi-key':s.maytapiKey},body:{to_number:'91'+ph,type:'text',message:msg}};
+  }else if(s.waProvider==='mas'&&s.masAuth){
+   target={url:'https://app.messageautosender.com/api/v1/message/create',headers:{'Authorization':s.masAuth,'accept':'application/json'},body:{receiverMobileNo:'91'+ph,message:[msg]}};
+  }else{
+   box.style.color='var(--slate)';
+   box.textContent='"Send via" is set to Manual — opening WhatsApp with the update instead.';
+   window.open('https://wa.me/91'+ph+'?text='+encodeURIComponent(msg));
+   logAct(null,'WHATSAPP','Morning notification (wa.me)',ph);
+   return;
+  }
+  const r=await fetch('/api/wa-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(target)});
+  const t=await r.text();
+  box.style.color=r.ok?'var(--green)':'var(--red)';
+  box.textContent=(r.ok?'✅ Sent — ':'❌ Failed — ')+'HTTP '+r.status+'. '+t.slice(0,300);
+  if(r.ok)logAct(null,'WHATSAPP','Morning notification',ph+' — Due:'+dueToday+' Over:'+overdue+' Fresh:'+freshDial);
+ }catch(e){
+  box.style.color='var(--red)';
+  box.textContent='❌ Request failed — proxy/network error. Detail: '+(e&&e.message?e.message:e);
+ }
+}
+async function sendEodNotification(){
+ const box=$('#notifyResult');
+ const ph=p10(DB.settings.notifyNumber);
+ if(!ph){box.style.color='var(--red)';box.textContent='Enter a valid 10-digit number above and save it first.';return;}
+ const t=todayStats();
+ const dateStr=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'short'});
+ const msg='🌙 EOD Report — '+dateStr+'\n\n'+
+  '📞 Dials: '+t.dials+'\n'+
+  '✅ Connected: '+t.conn+'\n'+
+  '📧 Emails: '+t.em+'\n'+
+  '💬 WhatsApp: '+t.wa+'\n'+
+  '🤝 Meetings: '+t.mtg+'\n'+
+  '📄 RFQs: '+t.rfq+'\n\n'+
+  'End of day summary from BRL Command Center.';
+ box.style.color='var(--slate)';box.textContent='Sending…';
+ const s=DB.settings;
+ try{
+  let target=null;
+  if(s.waProvider==='maytapi'&&s.maytapiProduct&&s.maytapiPhone&&s.maytapiKey){
+   target={url:'https://api.maytapi.com/api/'+s.maytapiProduct+'/'+s.maytapiPhone+'/sendMessage',headers:{'x-maytapi-key':s.maytapiKey},body:{to_number:'91'+ph,type:'text',message:msg}};
+  }else if(s.waProvider==='mas'&&s.masAuth){
+   target={url:'https://app.messageautosender.com/api/v1/message/create',headers:{'Authorization':s.masAuth,'accept':'application/json'},body:{receiverMobileNo:'91'+ph,message:[msg]}};
+  }else{
+   box.style.color='var(--slate)';
+   box.textContent='"Send via" is set to Manual — opening WhatsApp with the update instead.';
+   window.open('https://wa.me/91'+ph+'?text='+encodeURIComponent(msg));
+   logAct(null,'WHATSAPP','EOD notification (wa.me)',ph);
+   return;
+  }
+  const r=await fetch('/api/wa-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(target)});
+  const rt=await r.text();
+  box.style.color=r.ok?'var(--green)':'var(--red)';
+  box.textContent=(r.ok?'✅ Sent — ':'❌ Failed — ')+'HTTP '+r.status+'. '+rt.slice(0,300);
+  if(r.ok)logAct(null,'WHATSAPP','EOD notification',ph+' — Dials:'+t.dials+' Conn:'+t.conn+' RFQ:'+t.rfq);
+ }catch(e){
+  box.style.color='var(--red)';
+  box.textContent='❌ Request failed — proxy/network error. Detail: '+(e&&e.message?e.message:e);
+ }
+}
+async function genPdf(id){
+ const L=find(id);
+ const box=$('#pdfBox');
+ box.style.color='var(--slate)';box.textContent='Generating…';
+ try{
+  const r=await fetch('/api/profile-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({co:L.co,name:L.name,industry:L.industry})});
+  if(!r.ok){box.style.color='var(--red)';box.textContent='Failed to generate PDF (HTTP '+r.status+').';return;}
+  const j=await r.json();
+  const fullUrl=window.location.origin+j.url;
+  box.style.color='var(--ink)';
+  box.innerHTML='<div class="note">✅ Generated — same letterhead every time, wording tailored to this lead\'s industry.</div>'+
+   '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'+
+   '<button class="btn sm ghost" onclick="window.open(\''+fullUrl+'\')">👁 View PDF</button>'+
+   '<button class="btn sm ghost" onclick="emailPdf('+id+',\''+fullUrl+'\')">✉️ Email this PDF</button>'+
+   '<button class="btn sm ghost" onclick="waPdf('+id+',\''+fullUrl+'\')">💬 WhatsApp this PDF</button>'+
+   '</div>';
+ }catch(e){
+  box.style.color='var(--red)';box.textContent='Request failed: '+(e&&e.message?e.message:e);
+ }
+}
+function emailPdf(id,fullUrl){
+ // Redirects to the real attachment-sending flow — this used to be a separate
+ // mailto-with-link-only implementation, which is exactly what caused emails
+ // to keep going out as links instead of attachments. Now there's only one
+ // real code path for this, used everywhere in the app.
+ return sendProfileEmailReal(id);
+}
+async function waPdf(id,fullUrl){
+ // Same fix as emailPdf — redirect to the one real document-sending function
+ // instead of a second, separate implementation that could fall out of sync.
+ return sendProfilePdfWA(id);
+}
+function setOutcome(id,out){const L=find(id);if(!out)return;
+ const m=OUTCOMES[out];L.outcome=out;L.lastCall=todayKey();
+ // Response no longer drives funnel position directly. It can still move a lead
+ // out of the funnel entirely (bad data / parked / dead) — those three stay
+ // exactly as before. Anything else just keeps the lead ACTIVE; stage is untouched.
+ L.status=(m.s==='BAD DATA'||m.s==='PARKED'||m.s==='DEAD')?m.s:'ACTIVE';
+ if(m.d!==null)L.nextDate=m.d>0?nextWorkDay(m.d):'';
+ saveDB('leads');logAct(L,'OUTCOME',out,'');
+ if(m.alert==='RFQ'){const t={s:'🔥 RFQ RECEIVED — '+L.co+' ('+L.name+') — rates within 24h',b:'RFQ logged from '+L.co+' — '+L.name+'.\nRemarks: '+(L.remarks||'—')+'\n\nRates team: prepare and revert.'};
+  window.open('mailto:'+DB.settings.suyashhEmail+'?cc='+encodeURIComponent(DB.settings.ratesTeam)+'&subject='+encodeURIComponent(t.s)+'&body='+encodeURIComponent(t.b));}
+ if(m.alert==='MEETING'||m.alert==='WON'){const t={s:(m.alert==='WON'?'🏆 NEW LOGO WON — ':'🤝 Meeting logged — ')+L.co,b:L.co+' — '+L.name+'\nRemarks: '+(L.remarks||'—')};
+  window.open('mailto:'+DB.settings.suyashhEmail+'?subject='+encodeURIComponent(t.s)+'&body='+encodeURIComponent(t.b));}
+ // Response can SUGGEST a stage move — only applies if the lead confirms.
+ const sug=OUTCOME_STAGE_SUGGEST[out];
+ if(sug&&!(L.stage===sug.stage&&L.stageStatus===sug.ss)){
+  if(confirm('This response suggests updating the funnel stage to:\n\nStage '+sug.stage+' — '+FUNNEL_STAGES[sug.stage-1]+' ('+sug.ss+')\n\nApply this stage update?')){
+   L.stage=sug.stage;L.stageStatus=sug.ss;L.stageDate=todayKey();saveDB('leads');
+  }
+ }
+ openDrawer(id);render();}
+function setStage(id,stage,stageStatus){
+ const L=find(id);L.stage=stage;L.stageStatus=stageStatus;L.stageDate=todayKey();
+ saveDB('leads');openDrawer(id);render();
+ toast('Stage: '+stage+' — '+FUNNEL_STAGES[stage-1]+' ('+stageStatus+')');
+}
+let INQUIRIES=null;
+async function loadInquiries(silent){
+ NEXT_REFRESH_IN=300;
+ const box=$('#inqBox');if(box){box.textContent='Fetching…';}
+ try{
+  const r=await fetch('/api/website-inquiries');const j=await r.json();
+  if(!r.ok){if(!silent){INQUIRIES=[];toast('❌ '+(j.error||'Failed to fetch'));}render();return;}
+  INQUIRIES=j.rows;render();
+ }catch(e){if(!silent){INQUIRIES=[];toast('❌ Request failed');}render();}
+}
+let FIELD_TASKS=null;
+async function loadTasks(silent){
+ NEXT_REFRESH_IN=300;
+ try{const r=await fetch('/api/field-tasks');const j=await r.json();
+  if(!r.ok){if(!silent){FIELD_TASKS=[];toast('❌ '+(j.error||'Failed to fetch'));}render();return;}
+  FIELD_TASKS=j.rows;render();
+ }catch(e){if(!silent){FIELD_TASKS=[];toast('❌ Request failed');}render();}
+}
+function vTasks(){
+ let html='<h2 class="sec" style="margin-top:0">🗺️ Field Tasks <small>Google Sheet — read & write</small></h2>'+
+  '<button class="btn sm ghost" onclick="loadTasks()">🔄 Fetch latest</button> <span id="refreshTimer" class="note"></span>';
+ html+='<div class="card" style="margin-top:14px"><h3>➕ Add one task</h3>'+
+  ['Day','Date','Time_Slot','Category','Priority','Status','Company','Contact_Person','Mobile','Email','Address','City_Area','Task_Description','Assigned_To','Next_Action','Next_Action_Date','Notes']
+  .map(k=>'<div class="frow"><label>'+k.replace(/_/g,' ')+'</label><input id="t_'+k+'"></div>').join('')+
+  '<button class="btn sm ghost" onclick="addTask()">Add to sheet</button>'+
+  '<div class="drop" id="dropTasks" style="margin-top:10px">Bulk add — drop .xlsx / .csv here or <label style="color:var(--navy);cursor:pointer;font-weight:700"><input type="file" id="fileTasks" accept=".xlsx,.xls,.csv" style="display:none">browse</label>'+
+  '<div class="note" style="margin-top:6px">Column headers must match the sheet exactly (Task_ID, Company, Mobile, etc). Leave Task_ID blank for new rows — it auto-increments. Fill Task_ID to update an existing row instead.</div></div>'+
+  '<div id="taskUpBox" class="note" style="margin-top:6px"></div></div>';
+ if(FIELD_TASKS===null){html+='<div class="note" style="margin-top:10px">Click "Fetch latest" to load.</div>';return html;}
+ if(!FIELD_TASKS.length){html+='<div class="note" style="margin-top:10px">No tasks found (or Apps Script URL not set in Settings).</div>';return html;}
+ html+='<table style="margin-top:14px"><thead><tr><th>Task / When</th><th>Category · Priority</th><th>Company / Contact</th><th>Address / City</th><th>Task</th><th>Status</th><th>Assigned</th><th>Outcome</th><th>Next action</th><th>Notes</th></tr></thead><tbody>'+
+  FIELD_TASKS.map(t=>'<tr>'+
+  '<td style="font-size:11px">'+esc(t.Task_ID)+'<br>'+esc(t.Day)+' '+esc(t.Date)+'<br>'+esc(t.Time_Slot)+'</td>'+
+  '<td style="font-size:11px">'+esc(t.Category)+'<br><b>'+esc(t.Priority)+'</b></td>'+
+  '<td><b>'+esc(t.Company)+'</b><br><small>'+esc(t.Contact_Person)+' · '+esc(t.Mobile)+'</small><br><small>'+esc(t.Email)+'</small></td>'+
+  '<td style="font-size:11px">'+esc(t.Address)+'<br><b>'+esc(t.City_Area)+'</b></td>'+
+  '<td style="font-size:11px">'+esc((t.Task_Description||'').slice(0,140))+'</td>'+
+  '<td><span class="st">'+esc(t.Status)+'</span></td>'+
+  '<td style="font-size:12px">'+esc(t.Assigned_To)+'<br><small>'+esc(t.Completion_Time)+'</small></td>'+
+  '<td style="font-size:11px">'+esc((t.Outcome||'').slice(0,160))+'</td>'+
+  '<td style="font-size:11px">'+esc(t.Next_Action)+'<br><small>'+esc(t.Next_Action_Date)+'</small></td>'+
+  '<td style="font-size:11px">'+esc((t.Notes||'').slice(0,140))+'</td></tr>').join('')+
+  '</tbody></table>';
+ return html;
+}
+async function addTask(){
+ const g=k=>{const el=$('#t_'+k);return el?el.value.trim():'';};
+ if(!g('Company')&&!g('Contact_Person')){toast('Company or contact required');return;}
+ const item={};['Day','Date','Time_Slot','Category','Priority','Status','Company','Contact_Person','Mobile','Email','Address','City_Area','Task_Description','Assigned_To','Next_Action','Next_Action_Date','Notes'].forEach(k=>{const v=g(k);if(v)item[k]=v;});
+ try{
+  const r=await fetch('/api/field-tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+  const j=await r.json();
+  if(r.ok){toast('✅ Added as '+j.ids[0]);loadTasks();}
+  else toast('❌ '+(j.error||'Failed to save'));
+ }catch(e){toast('❌ Request failed');}
+}
+function wireTasksDrop(){
+ const drop=$('#dropTasks'),file=$('#fileTasks');
+ if(!drop)return;
+ drop.ondragover=e=>{e.preventDefault();drop.classList.add('hover');};
+ drop.ondragleave=()=>drop.classList.remove('hover');
+ const go=f=>{if(!f)return;const rd=new FileReader();
+  rd.onload=async e=>{
+   try{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    const box=$('#taskUpBox');box.textContent='Uploading '+rows.length+' row(s)…';
+    const r=await fetch('/api/field-tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rows)});
+    const j=await r.json();
+    if(r.ok){box.style.color='var(--green)';box.textContent='✅ '+j.ids.length+' row(s) saved.';loadTasks();}
+    else{box.style.color='var(--red)';box.textContent='❌ '+(j.error||'Upload failed');}
+   }catch(err){toast('Could not read the file');}
+  };rd.readAsArrayBuffer(f);
+ };
+ drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hover');go(e.dataTransfer.files[0]);};
+ file.onchange=e=>go(e.target.files[0]);
+}
+function vInquiry(){
+ let html='<h2 class="sec" style="margin-top:0">🌐 Website Inquiry <small>from your website quote form (Google Sheet)</small></h2>'+
+  '<button class="btn sm ghost" onclick="loadInquiries()">🔄 Fetch latest</button> <span id="refreshTimer" class="note"></span>';
+ if(INQUIRIES===null){html+='<div class="note" style="margin-top:10px" id="inqBox">Click "Fetch latest" to load.</div>';return html;}
+ if(!INQUIRIES.length){html+='<div class="note" style="margin-top:10px">No inquiries found (or sheet URL not set in Settings).</div>';return html;}
+ html+='<table style="margin-top:10px"><thead><tr><th>Time</th><th>Name / Company</th><th>Contact</th><th>Route</th><th>Service</th><th>Industry</th><th>Ref</th><th>Action</th></tr></thead><tbody>'+
+  INQUIRIES.map((r,i)=>'<tr><td style="font-size:11px">'+esc(r.Timestamp)+'</td><td><b>'+esc(r.Name)+'</b><br><small>'+esc(r.Company)+'</small></td>'+
+  '<td style="font-size:12px">'+esc(r.Mobile)+'<br>'+esc(r.Email)+'</td><td style="font-size:12px">'+esc(r.Origin)+' → '+esc(r.Destination)+'</td>'+
+  '<td>'+esc(r.ServiceType)+'</td><td>'+esc(r.Industry)+'</td><td style="font-size:11px">'+esc(r.ReferenceID)+'</td>'+
+  '<td><button class="btn sm ghost" onclick="addInquiryAsLead('+i+')">➕ Add as lead</button></td></tr>').join('')+
+  '</tbody></table>';
+ return html;
+}
+function addInquiryAsLead(i){
+ const r=INQUIRIES[i];
+ const p=p10(r.Mobile);
+ if(p&&LIVE_LEADS.some(l=>p10(l.mob)===p)){toast('⚠ A lead with this mobile already exists — skipped.');return;}
+ const maxId=Math.max(0,...LIVE_LEADS.map(l=>l.id));
+ LIVE_LEADS.push({id:maxId+1,camp:'Website Inquiry',co:r.Company||r.Name,name:r.Name,desig:'',loc:r.WarehouseLocation||'',mob:r.Mobile,em:r.Email,
+  industry:r.Industry,sat:true,hist:'Route: '+r.Origin+' → '+r.Destination+' | Service: '+r.ServiceType+' | Weight: '+r.Weight+' | Vehicle: '+r.VehicleType+' | Req: '+r.Requirements+' | Ref: '+r.ReferenceID,
+  status:'ACTIVE',stage:0,stageStatus:'Initiated',stageDate:todayKey(),outcome:'',remarks:r.Requirements||'',nextDate:'',lastCall:'',src:'manual'});
+ applyDataMode();saveDB('leads');logAct(null,'IMPORT','Website inquiry added as lead',r.Name);
+ toast('✅ Added as lead — Stage 0');render();
+}
+function vRevival(){
+ const dead=DB.leads.filter(l=>l.status==='DEAD');
+ const vals=REVIVAL_STAGES.map((nm,i)=>dead.filter(l=>(l.revivalStage??-1)===i).length);
+ const notStarted=dead.filter(l=>l.revivalStage===undefined||l.revivalStage===null).length;
+ let html='<h2 class="sec" style="margin-top:0">♻️ Dead Client Revival <small>separate track — not part of the normal Pipeline</small></h2>'+
+  '<div class="note" style="margin-bottom:14px">These are leads marked DEAD. Move them through Reconnect → Follow-Up → New Requirement → Quotation → Reactivated. Reactivated leads can be sent back into the normal Pipeline as a fresh lead.</div>'+
+  '<div class="card" style="text-align:center;padding:18px;margin-bottom:14px">'+
+  '<div style="font-family:\'Barlow Condensed\';font-size:38px;font-weight:700;color:var(--slate);line-height:1">'+dead.length+'</div>'+
+  '<div class="note" style="margin-top:4px">Total dead clients on file · '+notStarted+' not yet in a revival attempt</div></div>'+
+  '<table><thead><tr><th>Revival stage</th><th>Leads</th></tr></thead><tbody>'+
+  REVIVAL_STAGES.map((nm,i)=>'<tr onclick="revivalFilter('+i+')" style="cursor:pointer"><td><b>'+(i+1)+'.</b> '+nm+'</td><td><span class="st" style="background:'+REVIVAL_COLORS[i]+';color:#fff">'+vals[i]+'</span></td></tr>').join('')+
+  '</tbody></table>';
+ return html;
+}
+function revivalFilter(idx){FILTER.st='';FILTER.q='';FILTER.multi=null;FILTER.revival=idx;go('leads');}
+function setRevivalStage(id,idx){
+ const L=find(id);L.revivalStage=idx;L.revivalDate=todayKey();
+ saveDB('leads');openDrawer(id);render();
+ toast('Revival: '+REVIVAL_STAGES[idx]);
+}
+function revivalPrio(L){
+ // Leads added before this field existed via the dedicated Add-dead-client form
+ // are still user-inserted, so infer 'high' for them too via their campaign tag.
+ return L.revivalPriority||(L.camp==='Dead client revival'?'high':'low');
+}
+function markDead(id){
+ if(!confirm('Move this lead to Dead Client Revival?'))return;
+ const L=find(id);L.status='DEAD';L.revivalStage=0;L.revivalDate=todayKey();L.revivalPriority='high';
+ L.hist=(L.hist?L.hist+'\n':'')+'Marked DEAD on '+todayKey();
+ saveDB('leads');openDrawer(id);render();
+ toast('Moved to Dead Revival — Reconnect');
+}
+function reactivateLead(id){
+ if(!confirm('Move this lead back into the normal Pipeline as an active lead?'))return;
+ const L=find(id);L.status='ACTIVE';L.stage=0;L.stageStatus='Initiated';L.stageDate=todayKey();
+ L.revivalStage=undefined;L.hist=(L.hist?L.hist+'\n':'')+'Reactivated from Dead Revival on '+todayKey();
+ saveDB('leads');openDrawer(id);render();
+ toast('✅ Reactivated — back in the main Pipeline at Stage 0');
+}
+function find(id){return DB.leads.find(l=>l.id===id);}
+/* ================= TODAY STATS ================= */
+function todayStats(){
+ const tk=todayKey();const s={dials:0,conn:0,em:0,wa:0,mtg:0,rfq:0};
+ DB.activity.forEach(a=>{if(new Date(a.t).toISOString().slice(0,10)!==tk)return;
+  if(a.ch==='CALL')s.dials++;
+  if(a.ch==='EMAIL')s.em++;
+  if(a.ch==='WHATSAPP')s.wa++;
+  if(a.ch==='OUTCOME'){const m=OUTCOMES[a.ty];if(m&&m.conn)s.conn++;
+   if(a.ty.indexOf('Meeting')>-1)s.mtg++;if(a.ty.indexOf('RFQ received')>-1)s.rfq++;}});
+ return s;
+}
+function queues(){
+ const tk=todayKey();const sat=isSat();
+ const due=[],retry=[],over=[],fresh=[];
+ DB.leads.forEach(L=>{
+  if(/DEAD|BAD/.test(L.status))return;
+  if(L.stage===8&&L.stageStatus==='Completed')return; // Agreement Signed — out of the working queues
+  if(sat&&!L.sat)return;
+  if(L.nextDate){
+   if(L.nextDate===tk)(/Ringing|Busy|Switched/.test(L.outcome)?retry:due).push(L);
+   else if(L.nextDate<tk&&L.status!=='PARKED')over.push(L);
+  } else if((L.stage??0)===0)fresh.push(L);
+ });
+ return {due,retry,over,fresh};
+}
+/* ================= VIEWS ================= */
+let VIEW='dash',FILTER={q:'',st:'',camp:'',multi:null,stage:null},drawerId=null,SEL=new Set();
+const NAVDEF=[['dash','📊','Dashboard'],['pipe','🛣️','Pipeline'],['revival','♻️','Dead Revival'],['inquiry','🌐','Website Inquiry'],['tasks','🗺️','Field Tasks'],['action','🚩','Action List'],['leads','📞','Leads'],['import','➕','Add / Import'],['activity','📒','Activity'],['settings','⚙️','Settings']];
+function renderNav(){
+ const q=queues();
+ $('#nav').innerHTML=NAVDEF.map(([k,ic,lb])=>'<button class="'+(VIEW===k?'on':'')+'" onclick="go(\''+k+'\')">'+ic+' '+lb+(k==='dash'&&(q.due.length+q.over.length)?'<span class="cnt">'+(q.due.length+q.over.length)+'</span>':'')+'</button>').join('');
+}
+let VIEW_HISTORY=[];
+let NEXT_REFRESH_IN=300;
+function go(v){if(v!==VIEW){VIEW_HISTORY.push(VIEW);}VIEW=v;render();}
+function goBack(){const prev=VIEW_HISTORY.pop();if(prev){VIEW=prev;render();}}
+function refreshTop(){
+ const s=todayStats();
+ $('#topStats').innerHTML=
+  '<div><b>'+s.conn+'/'+DB.settings.tC+'</b><span>connected</span></div>'+
+  '<div><b>'+s.em+'/'+DB.settings.tE+'</b><span>emails</span></div>'+
+  '<div><b>'+s.wa+'/'+DB.settings.tW+'</b><span>whatsapp</span></div>'+
+  '<div><b>'+s.mtg+'/'+DB.settings.tM+'</b><span>meetings</span></div>'+
+  '<div><b>'+s.rfq+'/'+DB.settings.tR+'</b><span>rfq</span></div>';
+}
+function render(){
+ renderNav();refreshTop();
+ const d=new Date();
+ $('#topDay').textContent=d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+ $('#backBtn').style.display=VIEW_HISTORY.length?'':'none';
+ $('#satBadge').style.display=isSat()?'':'none';
+ $('#demoBadge').style.display=DB.settings.demoMode?'':'none';
+ const h=d.getHours();$('#lunchBadge').style.display=(h===13)?'':'none';
+ const v=$('#view');
+ if(VIEW==='dash')v.innerHTML=vDash();
+ if(VIEW==='pipe')v.innerHTML=vPipe();
+ else if(VIEW==='revival')v.innerHTML=vRevival();
+ else if(VIEW==='inquiry')v.innerHTML=vInquiry();
+ else if(VIEW==='tasks')v.innerHTML=vTasks();
+ if(VIEW==='action')v.innerHTML=vActionList();
+ if(VIEW==='leads')v.innerHTML=vLeads();
+ if(VIEW==='import')v.innerHTML=vImport();
+ if(VIEW==='activity')v.innerHTML=vActivity();
+ if(VIEW==='settings')v.innerHTML=vSettings();
+ if(VIEW==='import')wireImport();
+ if(VIEW==='tasks')wireTasksDrop();
+}
+function vDash(){
+ const s=todayStats(),q=queues(),T=DB.settings;
+ const flags=redFlags();
+ const pct=Math.min(100,Math.round(s.conn/T.tC*100));
+ const li=L=>'<li><div><span class="co" onclick="openDrawer('+L.id+')">'+esc(L.co)+'</span><small>'+esc(L.name)+' · '+esc(L.mob||'no number')+'</small></div><button class="btn sm ghost" onclick="openDrawer('+L.id+')">Open</button></li>';
+ const mini=(label,a,t)=>{const g=a-t;return '<div class="mini"><b>'+a+'</b><span>'+label+' / '+t+'</span> <span class="gap '+(g>=0?'ok':'no')+'">'+(g>=0?'+':'')+g+'</span></div>';};
+ return ''+
+ (flags.length?'<div class="card" style="border:1.5px solid var(--red);cursor:pointer;margin-bottom:14px" onclick="go(\'action\')"><b style="color:var(--red)">🚩 '+flags.length+' lead(s) flagged</b><span class="note"> — stalled stages or signed-but-no-load. Tap to open the Action List.</span></div>':'')+
+ (()=>{const dead=DB.leads.filter(l=>l.status==='DEAD');if(!dead.length)return'';const reactivated=dead.filter(l=>l.revivalStage===5).length;
+  return '<div class="card" style="border:1.5px solid #6B8CAE;cursor:pointer;margin-bottom:14px" onclick="go(\'revival\')"><b style="color:#375A7F">♻️ '+dead.length+' dead client(s)</b><span class="note"> in revival tracking'+(reactivated?' · '+reactivated+' ready to reactivate':'')+'. Tap to open Dead Revival.</span></div>';})()+
+ '<div class="road"><h3>Today\'s Road — connected calls</h3>'+
+ '<div class="big"><em>'+s.conn+'</em> / '+T.tC+'</div>'+
+ '<div class="lane"><div class="fill" style="width:'+pct+'%"></div><div class="dash"></div><div class="truck" style="left:'+pct+'%">🚛</div></div>'+
+ '<div class="roadrow">'+mini('emails',s.em,T.tE)+mini('whatsapp',s.wa,T.tW)+mini('meetings',s.mtg,T.tM)+mini('rfqs',s.rfq,T.tR)+
+ '<div class="mini"><b>'+s.dials+'</b><span>total dial attempts</span></div></div></div>'+
+ '<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">'+
+ '<button class="btn amber" onclick="eodReport()">📊 Send EOD report to Suyashh</button>'+
+ '<button class="btn ghost" onclick="copyEOD()">Copy EOD text</button>'+
+ (isSat()?'<span class="badge sat" style="align-self:center">Saturday queue = plant/warehouse leads only</span>':'')+'</div>'+
+ '<h2 class="sec">Work queues <small>tap a company to open its cockpit</small></h2>'+
+ '<div class="queues">'+
+ '<div class="q due"><h4>📅 Due today <span>'+q.due.length+'</span></h4><ul>'+(q.due.map(li).join('')||'<div class="empty">Nothing due — pull from Fresh.</div>')+'</ul></div>'+
+ '<div class="q retry"><h4>🔁 Retry <span>'+q.retry.length+'</span></h4><ul>'+(q.retry.map(li).join('')||'<div class="empty">No retries queued.</div>')+'</ul></div>'+
+ '<div class="q fresh"><h4>🟢 Fresh dials <span>'+q.fresh.length+'</span></h4><ul>'+(q.fresh.slice(0,12).map(li).join('')||'<div class="empty">No fresh leads — import more.</div>')+'</ul></div>'+
+ '<div class="q over"><h4>⚠️ Overdue <span>'+q.over.length+'</span></h4><ul>'+(q.over.map(li).join('')||'<div class="empty">Clean — nothing overdue.</div>')+'</ul></div>'+
+ '<div class="q" style="border-color:#8A8A8A"><h4 style="color:#555">💀 Dead fresh <span>'+DB.leads.filter(l=>l.status==='DEAD'&&l.revivalStage===0).length+'</span></h4><ul>'+(DB.leads.filter(l=>l.status==='DEAD'&&l.revivalStage===0).slice(0,12).map(li).join('')||'<div class="empty">None waiting to start revival.</div>')+'</ul></div>'+
+ '<div class="q" style="border-color:#6B8CAE"><h4 style="color:#375A7F">♻️ Dead client <span>'+DB.leads.filter(l=>l.status==='DEAD'&&l.revivalStage>=1).length+'</span></h4><ul>'+(DB.leads.filter(l=>l.status==='DEAD'&&l.revivalStage>=1).slice(0,12).map(li).join('')||'<div class="empty">No dead clients past Dead Fresh yet.</div>')+'</ul></div>'+
+ '</div>';
+}
+function vLeads(){
+ const q=FILTER.q.toLowerCase();
+ const camps=[...new Set(DB.leads.map(l=>l.camp))].filter(Boolean);
+ let rows=DB.leads.filter(L=>
+  (!q||(L.co+L.name+L.mob+L.em+L.loc).toLowerCase().includes(q))&&
+  (!FILTER.st||L.status===FILTER.st)&&(!FILTER.camp||L.camp===FILTER.camp)&&
+  (!FILTER.stage&&FILTER.stage!==0||(L.stage??0)===FILTER.stage)&&
+  (FILTER.revival===undefined||FILTER.revival===null||(L.revivalStage??-1)===FILTER.revival)&&
+  (!FILTER.multi||FILTER.multi.includes(L.status)));
+ if(FILTER.st==='DEAD')rows=rows.sort((a,b)=>(revivalPrio(b)==='high')-(revivalPrio(a)==='high'));
+ const sts=['ACTIVE','PARKED','BAD DATA','DEAD'];
+ return '<h2 class="sec" style="margin-top:0">Lead book <small>'+rows.length+' of '+DB.leads.length+'</small></h2>'+
+ '<div class="toolrow">'+
+ '<input placeholder="Search company, name, number…" value="'+esc(FILTER.q)+'" oninput="FILTER.q=this.value;render()" style="min-width:220px">'+
+ '<select onchange="FILTER.st=this.value;FILTER.multi=null;FILTER.revival=null;render()"><option value="">All statuses</option>'+sts.map(s=>'<option '+(FILTER.st===s?'selected':'')+'>'+s+'</option>').join('')+'</select>'+
+ (FILTER.st==='DEAD'?('<select onchange="FILTER.revival=this.value!==\'\'?parseInt(this.value):null;render()"><option value="">All revival stages</option>'+REVIVAL_STAGES.map((nm,i)=>'<option value="'+i+'" '+(FILTER.revival===i?'selected':'')+'>'+(i+1)+'. '+nm+'</option>').join('')+'</select>'):'')+
+ '<select onchange="FILTER.stage=this.value!==\'\'?parseInt(this.value):null;FILTER.multi=null;render()"><option value="">All stages</option><option value="0" '+(FILTER.stage===0?'selected':'')+'>Stage 0 — Fresh</option>'+FUNNEL_STAGES.map((nm,i)=>'<option value="'+(i+1)+'" '+(FILTER.stage===i+1?'selected':'')+'>Stage '+(i+1)+' — '+nm+'</option>').join('')+'</select>'+
+ '<select onchange="FILTER.camp=this.value;render()"><option value="">All sources</option>'+camps.map(c=>'<option '+(FILTER.camp===c?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select>'+
+ (FILTER.multi?'<span class="pill on" onclick="FILTER.multi=null;render()">Pipeline filter: '+FILTER.multi.join('+')+' ✕</span>':'')+(SEL.size?'<button class="btn ghost" style="color:var(--red);border-color:var(--red)" onclick="bulkDelete()">🗑 Delete selected ('+SEL.size+')</button>':'')+'<button class="btn ghost" onclick="exportCSV()">⬇ Export CSV</button></div>'+
+ '<table><thead><tr><th style="width:30px"><input type="checkbox" data-ids="'+rows.map(r=>r.id).join(',')+'" '+(rows.length&&rows.every(r=>SEL.has(r.id))?'checked':'')+' onclick="toggleAll(this)"></th><th>Company / Contact</th><th>Designation</th><th>Mobile</th><th>'+(FILTER.st==='DEAD'?'Revival stage':'Stage')+'</th><th>Next</th><th>Sat</th></tr></thead><tbody>'+
+ rows.map(L=>'<tr class="lead" onclick="openDrawer('+L.id+')"><td onclick="event.stopPropagation()"><input type="checkbox" '+(SEL.has(L.id)?'checked':'')+' onclick="toggleSel('+L.id+',this)"></td><td><b>'+esc(L.co)+'</b><br><small style="color:var(--slate)">'+esc(L.name)+'</small></td>'+
+ '<td style="font-size:12px">'+esc(L.desig).slice(0,40)+'</td><td style="white-space:nowrap">'+esc(L.mob).split('/')[0]+'</td>'+
+ '<td>'+(L.status==='DEAD'?('<span class="st" style="background:'+(REVIVAL_COLORS[L.revivalStage]||'#8A8A8A')+';color:#fff">'+((L.revivalStage!==undefined&&L.revivalStage!==null)?REVIVAL_STAGES[L.revivalStage]:'Not started')+'</span> '+(revivalPrio(L)==='high'?'<span class="st" style="background:var(--red);color:#fff">HIGH</span>':'<span class="st" style="background:#DDD;color:#666">low</span>')):(L.status==='PARKED'||L.status==='BAD DATA'?'<span class="st '+stCls(L.status)+'">'+L.status+'</span>':((L.stage??0)===0?'<span class="st" style="background:'+STAGE0_COLOR+';color:#fff">Fresh</span>':'<span class="st" style="background:'+STAGE_COLORS[(L.stage??0)-1]+';color:#fff">S'+(L.stage??0)+' · '+(L.stageStatus||'Initiated')+'</span>')))+'</td><td>'+fmtD(L.nextDate)+'</td><td>'+(L.sat?'✔':'')+'</td></tr>').join('')+
+ '</tbody></table>';
+}
+function openDrawer(id){
+ drawerId=id;const L=find(id);const dr=$('#drawer');
+ dr.classList.add('open');
+ dr.innerHTML='<div class="dhead" style="position:relative"><button class="x" onclick="closeDrawer()">✕</button>'+
+ '<h3>'+esc(L.co)+'</h3><p>'+esc(L.name)+' · '+esc(L.desig)+' · '+esc(L.loc)+'</p>'+
+ '<p style="margin-top:6px">📱 '+esc(L.mob||'—')+' &nbsp; ✉️ '+esc(L.em||'—')+' &nbsp; <span class="st '+stCls(L.status)+'">'+L.status+'</span></p></div>'+
+ '<div class="dbody">'+
+ '<div class="actbar">'+
+ '<button class="act call" onclick="doCall('+id+')">📞<span>Call now</span></button>'+
+ '<button class="act mail" onclick="this.nextElementSibling.style.display=\'block\'">✉️<span>Email…</span></button>'+
+ '<div style="display:none;grid-column:span 3;border:1px solid var(--line);border-radius:7px;padding:8px;background:#fff">'+
+ ['PROFILE|Intro + Profile','CHASE|Profile chase','RATES|Rate reminder','MEETING|Meeting confirm','THANKYOU|Thank you','ESCALATE|⚠ Escalate to Suyashh'].map(x=>{const[k,l]=x.split('|');return '<button class="btn sm ghost" style="margin:3px" onclick="doEmail('+id+',\''+k+'\')">'+l+'</button>';}).join('')+'</div>'+
+ '<button class="act wa" onclick="this.nextElementSibling.style.display=\'block\'">💬<span>WhatsApp…</span></button>'+
+ '<div style="display:none;grid-column:span 3;border:1px solid var(--line);border-radius:7px;padding:8px;background:#fff">'+
+ ['PROFILE|Send Profile PDF','FOLLOWUP|Follow-up nudge','RATES|Rate reminder','MEETING|Meeting confirm'].map(x=>{const[k,l]=x.split('|');return '<button class="btn sm ghost" style="margin:3px" onclick="doWA('+id+',\''+k+'\')">'+l+'</button>';}).join('')+'</div>'+
+ '</div>'+
+ '<div class="frow"><label>📄 Profile PDF</label>'+
+ '<button class="btn sm ghost" onclick="genPdf('+id+')">Generate profile PDF</button>'+
+ '<div id="pdfBox" style="margin-top:8px"></div></div>'+
+ '<div class="frow"><label>✏️ Edit lead details</label>'+
+ '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+ '<input id="e_co" placeholder="Company" value="'+esc(L.co)+'">'+
+ '<input id="e_name" placeholder="Contact name" value="'+esc(L.name)+'">'+
+ '<input id="e_desig" placeholder="Designation" value="'+esc(L.desig)+'">'+
+ '<input id="e_loc" placeholder="Location" value="'+esc(L.loc)+'">'+
+ '<input id="e_mob" placeholder="Mobile" value="'+esc(L.mob)+'">'+
+ '<input id="e_em" placeholder="Email" value="'+esc(L.em)+'">'+
+ '<input id="e_industry" placeholder="Industry" value="'+esc(L.industry)+'">'+
+ '<input id="e_camp" placeholder="Source of lead" value="'+esc(L.camp)+'">'+
+ '</div><button class="btn sm ghost" style="margin-top:8px" onclick="saveLeadDetails('+id+')">💾 Save details</button></div>'+
+ '<div class="frow"><label>📋 Outcome — one tap logs the call</label>'+
+ '<select onchange="setOutcome('+id+',this.value)"><option value="">Pick outcome…</option>'+
+ Object.keys(OUTCOMES).map(o=>'<option '+(L.outcome===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div>'+
+ '<div class="frow"><label>Remarks — today\'s detail</label><textarea rows="2" onchange="find('+id+').remarks=this.value;saveDB(\'leads\')">'+esc(L.remarks)+'</textarea></div>'+
+ '<div class="frow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+ '<div><label>⏭ Next follow-up</label><select onchange="setNext('+id+',this.value)"><option value="">Auto / pick…</option>'+
+ Object.keys(NEXTOPTS).map(o=>'<option>'+o+'</option>').join('')+'<option>No follow-up</option></select></div>'+
+ '<div><label>📅 Next date</label><input type="date" value="'+(L.nextDate||'')+'" onchange="find('+id+').nextDate=this.value;saveDB(\'leads\');render()"></div></div>'+
+ '<div class="frow"><label>🛤 Funnel stage <small style="text-transform:none;color:var(--slate)">(separate from Response — set explicitly)</small></label>'+
+ '<select onchange="setStage('+id+',parseInt(this.value),find('+id+').stageStatus||\'Initiated\')">'+
+ '<option value="0" '+((L.stage??0)===0?'selected':'')+'>Stage 0 — Fresh (no connection yet)</option>'+
+ FUNNEL_STAGES.map((nm,i)=>'<option value="'+(i+1)+'" '+((L.stage??0)===i+1?'selected':'')+'>Stage '+(i+1)+' — '+nm+'</option>').join('')+
+ '</select></div>'+
+ '<div class="frow"><label>Stage status</label>'+
+ ['Initiated','Completed'].map(v=>'<span class="pill '+((L.stageStatus||'Initiated')===v?'on':'')+'" onclick="setStage('+id+',find('+id+').stage??0,\''+v+'\')">'+v+'</span>').join(' ')+
+ '</div>'+
+ (L.stage===8?'<div class="frow"><label>🏁 First load moved</label><input type="date" value="'+(L.firstLoadMoved||'')+'" onchange="find('+id+').firstLoadMoved=this.value;saveDB(\'leads\');render()"></div>':'')+
+ (L.status==='DEAD'?(
+  '<div class="frow" style="border:1px solid #6B8CAE;border-radius:8px;padding:10px;background:#F0F4F8">'+
+  '<label>♻️ Dead Client Revival</label>'+
+  REVIVAL_STAGES.map((nm,i)=>'<span class="pill '+((L.revivalStage??-1)===i?'on':'')+'" style="margin:2px" onclick="setRevivalStage('+id+','+i+')">'+(i+1)+'. '+nm+'</span>').join(' ')+
+  (L.revivalStage===5?'<div style="margin-top:8px"><button class="btn sm ghost" onclick="reactivateLead('+id+')">✅ Reactivated — move back to Pipeline</button></div>':'')+
+  '</div>'
+ ):'')+
+ '<div class="frow"><label>Priority & Saturday</label>'+
+ '<span class="pill '+(L.sat?'on':'')+'" onclick="find('+id+').sat=!find('+id+').sat;saveDB(\'leads\');openDrawer('+id+')">Sat-OK '+(L.sat?'✔':'✘')+'</span>'+
+ '<span class="pill" onclick="delLead('+id+')">🗑 Delete lead</span>'+
+ (L.status!=='DEAD'?'<span class="pill" onclick="markDead('+id+')">♻️ Move to Dead Revival</span>':'')+'</div>'+
+ '<div class="frow"><label>History (to 23-Jul + source of lead)</label><div class="hist">'+esc(L.camp)+' — '+esc(L.hist||'no prior feedback')+'</div></div>'+
+ '<div class="frow"><label>Recent activity on this lead</label><div class="hist">'+
+ DB.activity.filter(a=>a.id===id).slice(-8).reverse().map(a=>new Date(a.t).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+' · '+a.ch+' · '+esc(a.ty)).join('<br>')+
+ '</div></div></div>';
+}
+function setNext(id,opt){const L=find(id);if(!opt)return;
+ if(opt==='No follow-up'){L.nextDate='';}
+ else{const v=NEXTOPTS[opt];L.nextDate=(typeof v==='number')?nextWorkDay(v):v;}
+ saveDB('leads');openDrawer(id);render();}
+function saveLeadDetails(id){
+ const L=find(id);const g=k=>{const el=$('#e_'+k);return el?el.value.trim():'';};
+ if(!g('co')&&!g('name')){toast('Company or contact name required');return;}
+ L.co=g('co');L.name=g('name');L.desig=g('desig');L.loc=g('loc');L.mob=g('mob');L.em=g('em');L.camp=g('camp');L.industry=g('industry');
+ saveDB('leads');toast('Lead details updated ✓');openDrawer(id);render();}
+function delLead(id){if(!confirm('Delete this lead permanently?'))return;
+ LIVE_LEADS=LIVE_LEADS.filter(l=>l.id!==id);applyDataMode();saveDB('leads');closeDrawer();render();toast('Lead deleted');}
+function toggleSel(id,el){if(el.checked)SEL.add(id);else SEL.delete(id);render();}
+function toggleAll(el){const ids=(el.dataset.ids||'').split(',').filter(Boolean).map(Number);
+ if(el.checked)ids.forEach(id=>SEL.add(id));else ids.forEach(id=>SEL.delete(id));render();}
+function bulkDelete(){if(!SEL.size)return;
+ if(!confirm('Delete '+SEL.size+' selected lead(s) permanently? This cannot be undone.'))return;
+ LIVE_LEADS=LIVE_LEADS.filter(l=>!SEL.has(l.id));SEL.clear();applyDataMode();saveDB('leads');render();toast('Selected leads deleted');}
+function closeDrawer(){$('#drawer').classList.remove('open');drawerId=null;}
+function stageFilter(sts){FILTER.st='';FILTER.q='';FILTER.stage=null;FILTER.multi=sts;go('leads');}
+function setPipeView(mode){DB.settings.pipeView=mode;saveDB('settings');render();}
+function vPipe(){
+ const inFunnel=DB.leads.filter(l=>l.status!=='PARKED'&&l.status!=='BAD DATA'&&l.status!=='DEAD');
+ const vals=FUNNEL_STAGES.map((nm,i)=>inFunnel.filter(l=>(l.stage??0)===i+1).length);
+ const fresh0=inFunnel.filter(l=>(l.stage??0)===0).length;
+ const pipeline=vals.slice(0,7).reduce((a,b)=>a+b,0); // Stages 1–7 — excludes Agreement Signed (won/terminal)
+ const sql=vals[1]; // Stage 2 — Meeting Fixed specifically (not cumulative through later stages)
+ const mode=DB.settings.pipeView||'funnel';
+ let html='<h2 class="sec" style="margin-top:0">Pipeline <small>tap a stage to open those leads</small></h2>'+
+  '<div style="display:flex;gap:12px;margin-bottom:14px">'+
+  '<div class="card" style="text-align:center;padding:18px;flex:1;cursor:pointer" onclick="stageFilterByStage(0)">'+
+  '<div style="font-family:\'Barlow Condensed\';font-size:38px;font-weight:700;color:#8A6B6E;line-height:1">'+fresh0+'</div>'+
+  '<div class="note" style="margin-top:4px">Stage 0 — Fresh (no connection made yet)</div></div>'+
+  '<div class="card" style="text-align:center;padding:18px;flex:1">'+
+  '<div style="font-family:\'Barlow Condensed\';font-size:38px;font-weight:700;color:var(--navy);line-height:1">'+pipeline+'</div>'+
+  '<div class="note" style="margin-top:4px">MQL — Stages 1–7 (Agreement Signed tracked separately below)</div></div>'+
+  '<div class="card" style="text-align:center;padding:18px;flex:1;cursor:pointer" onclick="stageFilterByStage(2)">'+
+  '<div style="font-family:\'Barlow Condensed\';font-size:38px;font-weight:700;color:#1E7A4C;line-height:1">'+sql+'</div>'+
+  '<div class="note" style="margin-top:4px">SQL — Stage 2 (Meeting Fixed) — where sales can be closed</div></div>'+
+  '</div>'+
+  '<div style="display:flex;gap:8px;margin-bottom:14px">'+
+  ['funnel|🔻 Funnel','board|🗂 Board','table|📋 Table'].map(x=>{const[k,l]=x.split('|');return '<button class="btn sm '+(mode===k?'':'ghost')+'" onclick="setPipeView(\''+k+'\')">'+l+'</button>';}).join('')+
+  '</div>';
+ if(mode==='board')html+=vPipeBoard(inFunnel,vals);
+ else if(mode==='table')html+=vPipeTable(vals,fresh0);
+ else html+=vPipeFunnelBars(vals,fresh0);
+ const wonCount=inFunnel.filter(l=>l.stage===8&&l.stageStatus==='Completed').length;
+ html+='<h2 class="sec">🏆 Agreement Signed</h2><div class="card" onclick="stageFilterByStage(8)"><b style="font-size:22px;color:#1E7A4C">'+wonCount+'</b> <span class="note">signed — tracked to signature only; delivery/payment stays in ERP</span></div>';
+ const dead=DB.leads.filter(l=>l.status==='DEAD').length,bad=DB.leads.filter(l=>l.status==='BAD DATA').length,park=DB.leads.filter(l=>l.status==='PARKED').length;
+ html+='<h2 class="sec">Out of funnel</h2><div class="leak">'+
+  '<div class="card" onclick="stageFilter([\'PARKED\'])"><b>'+park+'</b><span class="note">⏸ PARKED — contract season diary (Dec-26 / Mar-27)</span></div>'+
+  '<div class="card" onclick="stageFilter([\'BAD DATA\'])"><b style="color:var(--red)">'+bad+'</b><span class="note">🔧 BAD DATA — queued for Lusha re-enrichment</span></div>'+
+  '<div class="card" onclick="stageFilter([\'DEAD\'])"><b style="color:#888">'+dead+'</b><span class="note">⛔ DEAD — no requirement / person left</span></div></div>';
+ const camps={};DB.leads.forEach(l=>{if(!camps[l.camp])camps[l.camp]={t:0,h:0,w:0};camps[l.camp].t++;if((l.stage??0)>=4&&!(l.stage===8&&l.stageStatus==='Completed'))camps[l.camp].h++;if(l.stage===8&&l.stageStatus==='Completed')camps[l.camp].w++;});
+ html+='<h2 class="sec">Lead source performance</h2><table><thead><tr><th>Source of lead</th><th>Leads</th><th>RFQ+</th><th>Signed</th></tr></thead><tbody>'+
+  Object.entries(camps).sort((a,b)=>b[1].h-a[1].h).map(([k,v])=>'<tr><td><b>'+esc(k||'—')+'</b></td><td>'+v.t+'</td><td>'+(v.h?'<span class="st HOT">'+v.h+'</span>':'—')+'</td><td>'+(v.w?'<span class="st WON">'+v.w+'</span>':'—')+'</td></tr>').join('')+
+  '</tbody></table>';
+ return html;
+}
+function vPipeFunnelBars(vals,fresh0){
+ const max=Math.max(...vals,fresh0,1);
+ let html='<div class="funnel">';
+ const w0=Math.max(28,Math.round(fresh0/max*100));
+ html+='<div class="fstage" style="width:'+w0+'%;background:#8A6B6E" onclick="stageFilterByStage(0)">'+
+  '<span>Stage 0 — Fresh</span><b>'+fresh0+'</b></div>';
+ if(fresh0||vals[0]){const conv=fresh0?Math.round(vals[0]/(fresh0+vals[0])*100):0;html+='<div class="fconv">▼ '+(fresh0+vals[0]?conv:0)+'% progress to next stage</div>';}
+ FUNNEL_STAGES.forEach((nm,i)=>{
+  const w=Math.max(28,Math.round(vals[i]/max*100));
+  html+='<div class="fstage" style="width:'+w+'%;background:'+STAGE_COLORS[i]+'" onclick="stageFilterByStage('+(i+1)+')">'+
+   '<span>Stage '+(i+1)+' — '+nm+'</span><b>'+vals[i]+'</b></div>';
+  if(i<FUNNEL_STAGES.length-1){
+   const conv=vals[i]?Math.round(vals[i+1]/(vals[i]+vals[i+1])*100):0;
+   html+='<div class="fconv">▼ '+(vals[i]+vals[i+1]?conv:0)+'% progress to next stage</div>';}
+ });
+ html+='</div>';
+ return html;
+}
+function vPipeBoard(inFunnel,vals){
+ const fresh0Leads=inFunnel.filter(l=>(l.stage??0)===0);
+ let html='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:8px">';
+ html+='<div style="min-width:220px;max-width:220px;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;flex-shrink:0">'+
+  '<div style="background:#8A6B6E;color:#fff;padding:8px 10px;cursor:pointer" onclick="stageFilterByStage(0)">'+
+  '<div style="font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.9">Stage 0</div>'+
+  '<div style="font-weight:700;font-size:12.5px">Fresh</div>'+
+  '<div style="font-family:\'Barlow Condensed\';font-size:20px;font-weight:700;margin-top:2px">'+fresh0Leads.length+'</div></div>'+
+  '<div style="max-height:280px;overflow-y:auto;padding:6px">'+
+  (fresh0Leads.length?fresh0Leads.slice(0,10).map(L=>
+   '<div onclick="openDrawer('+L.id+')" style="padding:6px 7px;border-radius:6px;margin-bottom:5px;background:var(--paper);cursor:pointer">'+
+   '<div style="font-size:11.5px;font-weight:600;color:var(--ink)">'+esc(L.co||'—')+'</div>'+
+   '<div style="font-size:10px;color:var(--slate)">'+esc(L.name||'')+'</div></div>'
+  ).join(''):'<div class="note" style="padding:6px">No leads here</div>')+
+  (fresh0Leads.length>10?'<div class="note" style="padding:4px 7px">+'+(fresh0Leads.length-10)+' more — tap header</div>':'')+
+  '</div></div>';
+ FUNNEL_STAGES.forEach((nm,i)=>{
+  const stageLeads=inFunnel.filter(l=>(l.stage??0)===i+1);
+  html+='<div style="min-width:220px;max-width:220px;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;flex-shrink:0">'+
+   '<div style="background:'+STAGE_COLORS[i]+';color:#fff;padding:8px 10px;cursor:pointer" onclick="stageFilterByStage('+(i+1)+')">'+
+   '<div style="font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.9">Stage '+(i+1)+'</div>'+
+   '<div style="font-weight:700;font-size:12.5px">'+nm+'</div>'+
+   '<div style="font-family:\'Barlow Condensed\';font-size:20px;font-weight:700;margin-top:2px">'+vals[i]+'</div></div>'+
+   '<div style="max-height:280px;overflow-y:auto;padding:6px">'+
+   (stageLeads.length?stageLeads.slice(0,10).map(L=>
+    '<div onclick="openDrawer('+L.id+')" style="padding:6px 7px;border-radius:6px;margin-bottom:5px;background:var(--paper);cursor:pointer">'+
+    '<div style="font-size:11.5px;font-weight:600;color:var(--ink)">'+esc(L.co||'—')+'</div>'+
+    '<div style="font-size:10px;color:var(--slate)">'+esc(L.name||'')+'</div>'+
+    '<span class="st" style="font-size:8.5px;padding:1px 6px;margin-top:3px;display:inline-block;background:'+(L.stageStatus==='Completed'?'var(--won)':'var(--fup)')+'">'+(L.stageStatus||'Initiated')+'</span></div>'
+   ).join(''):'<div class="note" style="padding:6px">No leads here</div>')+
+   (stageLeads.length>10?'<div class="note" style="padding:4px 7px">+'+(stageLeads.length-10)+' more — tap header</div>':'')+
+   '</div></div>';
+ });
+ html+='</div>';
+ return html;
+}
+function vPipeTable(vals,fresh0){
+ let html='<table><thead><tr><th>Stage</th><th>Leads</th><th>Share of pipeline</th></tr></thead><tbody>';
+ const total=vals.slice(0,7).reduce((a,b)=>a+b,0)||1;
+ html+='<tr onclick="stageFilterByStage(0)" style="cursor:pointer">'+
+  '<td><b>Stage 0</b> — Fresh</td>'+
+  '<td><span class="st" style="background:#8A6B6E;color:#fff">'+fresh0+'</span></td>'+
+  '<td>—</td></tr>';
+ FUNNEL_STAGES.forEach((nm,i)=>{
+  const isWon=i===7;
+  const pct=isWon?'—':Math.round(vals[i]/total*100)+'%';
+  html+='<tr onclick="stageFilterByStage('+(i+1)+')" style="cursor:pointer">'+
+   '<td><b>Stage '+(i+1)+'</b> — '+nm+'</td>'+
+   '<td><span class="st" style="background:'+STAGE_COLORS[i]+';color:#fff">'+vals[i]+'</span></td>'+
+   '<td>'+pct+'</td></tr>';
+ });
+ html+='</tbody></table>';
+ return html;
+}
+function stageFilterByStage(stage){FILTER.st='';FILTER.q='';FILTER.multi=null;FILTER.stage=stage;go('leads');}
+function redFlags(){
+ const X=DB.settings.redFlagDays||3,Y=DB.settings.wonFlagDays||30;
+ const daysSince=iso=>{if(!iso)return 999;const d=new Date(iso);return Math.floor((new Date()-d)/86400000);};
+ const flags=[];
+ DB.leads.forEach(L=>{
+  if(L.status==='PARKED'||L.status==='BAD DATA'||L.status==='DEAD')return;
+  const stage=L.stage??0,ss=L.stageStatus||'Initiated';
+  if(stage>=1&&ss==='Completed'&&stage<8){
+   const days=daysSince(L.stageDate);
+   if(days>=X)flags.push({L,type:'STALLED',days,msg:'Stage '+stage+' ('+FUNNEL_STAGES[stage-1]+') done, Stage '+(stage+1)+' ('+FUNNEL_STAGES[stage]+') not started — '+days+'d. Re-initiate Stage '+(stage+1)+'.'});
+  }
+  if(stage===8&&ss==='Completed'&&!L.firstLoadMoved){
+   const days=daysSince(L.stageDate);
+   if(days>=Y)flags.push({L,type:'NO_LOAD',days,msg:'Agreement signed '+days+'d ago, no load moved yet. Follow up on first load.'});
+  }
+ });
+ return flags;
+}
+function vActionList(){
+ const flags=redFlags().sort((a,b)=>b.days-a.days);
+ let html='<h2 class="sec" style="margin-top:0">🚩 Action list <small>'+flags.length+' flagged — auto from stage age (threshold set in Settings)</small></h2>';
+ if(!flags.length){html+='<div class="card">✅ Nothing flagged right now.</div>';return html;}
+ html+='<table><thead><tr><th>Company / Contact</th><th>Flag</th><th>Days</th><th>Next action</th></tr></thead><tbody>'+
+  flags.map(f=>'<tr class="lead" onclick="openDrawer('+f.L.id+')"><td><b>'+esc(f.L.co)+'</b><br><small style="color:var(--slate)">'+esc(f.L.name)+'</small></td>'+
+  '<td><span class="st" style="background:'+(f.type==='NO_LOAD'?'var(--fup)':'var(--bad)')+';color:'+(f.type==='NO_LOAD'?'#8A6A00':'var(--red)')+'">'+(f.type==='NO_LOAD'?'No load moved':'Stalled')+'</span></td>'+
+  '<td>'+f.days+'d</td><td style="font-size:12.5px">'+esc(f.msg)+'</td></tr>').join('')+
+  '</tbody></table>';
+ return html;
+}
+/* ================= IMPORT ================= */
+function vImport(){
+ return '<div class="grid2">'+
+ '<div class="card"><h3>➕ Add one lead</h3>'+
+ ['co|Company','name|Contact name','desig|Designation','mob|Mobile','em|Email','loc|Location','industry|Industry','camp|Source of lead'].map(x=>{const[k,l]=x.split('|');
+ return '<div class="frow"><label>'+l+'</label><input id="f_'+k+'"></div>';}).join('')+
+ '<div class="frow"><label>Pipeline stage (optional — defaults to Stage 0, Fresh)</label><select id="f_stage">'+
+ '<option value="">— Stage 0, Fresh (no connection yet) —</option>'+
+ FUNNEL_STAGES.map((nm,i)=>'<option value="'+(i+1)+'|Completed">Stage '+(i+1)+' — '+nm+' (Completed)</option>').join('')+
+ '</select></div>'+
+ '<div class="frow"><label>Latest response (optional)</label><select id="f_outcome"><option value="">—</option>'+
+ Object.keys(OUTCOMES).map(o=>'<option>'+o+'</option>').join('')+'</select></div>'+
+ '<div class="frow"><label>Remarks / notes (optional)</label><textarea id="f_remarks" rows="2"></textarea></div>'+
+ '<div class="frow"><label>Next step (optional)</label><input id="f_next"></div>'+
+ '<button class="btn amber" onclick="addOne()">Add to lead book</button></div>'+
+ '<div class="card" style="border:1px solid #6B8CAE;background:#F0F4F8"><h3>♻️ Add dead client (for revival)</h3>'+
+ '<div class="note">Use this for an old/dead client you want to attempt reviving — skips the normal funnel and lands directly in ♻️ Dead Revival at Stage 1 (Reconnect).</div>'+
+ ['dco|Company','dname|Contact name','ddesig|Designation','dmob|Mobile','dem|Email','dloc|Location','dindustry|Industry','dreason|Why they went dead (optional)'].map(x=>{const[k,l]=x.split('|');
+ return '<div class="frow"><label>'+l+'</label><input id="f_'+k+'"></div>';}).join('')+
+ '<button class="btn sm ghost" onclick="addDeadLead()">Add to Dead Revival</button>'+
+ '<div class="drop" id="dropDead" style="margin-top:10px">Bulk add dead clients — drop .xlsx / .csv here or <label style="color:var(--navy);cursor:pointer;font-weight:700"><input type="file" id="fileDead" accept=".xlsx,.xls,.csv" style="display:none">browse</label>'+
+ '<div class="note" style="margin-top:6px">Same columns as the normal template (Company, Contact, Mobile, Email, Location, Industry, Source of lead) — every row imported here goes straight into Dead Revival at Dead Fresh, high priority.</div></div>'+
+ '</div>'+
+ '<div class="card"><h3>📥 Bulk upload — Excel / CSV</h3>'+
+ '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn sm ghost" onclick="downloadTemplate()">⬇ Simple template</button>'+
+ '<button class="btn sm ghost" onclick="downloadFullTemplate()">⬇ Full transaction template</button></div>'+
+ '<div class="drop" id="drop">Drop .xlsx / .csv here or <label style="color:var(--navy);cursor:pointer;font-weight:700"><input type="file" id="file" accept=".xlsx,.xls,.csv" style="display:none">browse</label>'+
+ '<div class="note" style="margin-top:8px">Always recognized: Company, Contact/Name, Designation, Mobile/Phone, Email, Location/City, Industry/Sector, Source of lead. '+
+ 'Also recognized if present, for importing past transaction history: <b>Pipeline Stage</b> (e.g. "Stage 6 — Negotiation Initiated", "Stage 8 — WON / Active", "OUT — DEAD", "PRE-FUNNEL"), <b>Latest Outcome</b>, <b>Latest Remark</b>, <b>Remark History</b> (separate entries with <code>||</code>), <b>Last Activity</b> (e.g. "29-Jul"), <b>Next Step</b>. Multiple mobile numbers separated by "/" are supported — the first becomes the primary number, the rest are kept in history. Duplicates (same 10-digit mobile or email) are skipped automatically.</div></div>'+
+ '<div id="impPrev"></div></div></div>';
+}
+function wireImport(){
+ const drop=$('#drop'),file=$('#file');
+ if(drop){
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add('hover');};
+  drop.ondragleave=()=>drop.classList.remove('hover');
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hover');handleFile(e.dataTransfer.files[0]);};
+  file.onchange=e=>handleFile(e.target.files[0]);
+ }
+ const dropD=$('#dropDead'),fileD=$('#fileDead');
+ if(dropD){
+  dropD.ondragover=e=>{e.preventDefault();dropD.classList.add('hover');};
+  dropD.ondragleave=()=>dropD.classList.remove('hover');
+  dropD.ondrop=e=>{e.preventDefault();dropD.classList.remove('hover');handleFile(e.dataTransfer.files[0],true);};
+  fileD.onchange=e=>handleFile(e.target.files[0],true);
+ }
+}
+function handleFile(f,asDead){
+ if(!f)return;const rd=new FileReader();
+ rd.onload=e=>{
+  try{
+   const wb=XLSX.read(e.target.result,{type:'array'});
+   const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+   importRows(rows,f.name,asDead);
+  }catch(err){toast('Could not read the file — is it a valid Excel/CSV?');}
+ };rd.readAsArrayBuffer(f);
+}
+function pick(r,keys){for(const k of Object.keys(r)){const kl=k.toLowerCase();if(keys.some(x=>kl.includes(x)))return String(r[k]).trim();}return'';}
+// Maps a portal-style plain-text outcome (no emoji) to this app's exact OUTCOMES key.
+// Only maps confident matches — anything else is kept as-is (raw text still saved,
+// just won't highlight a specific option in the Response dropdown).
+const OUTCOME_TEXT_MAP={
+ 'asked for company profile':'📎 Asked for company profile','busy — retry later':'🔕 Busy — retry later',
+ 'client asked to call back':'📆 Client asked to call back','client disconnecting calls':'🚫 Client disconnecting calls',
+ 'email / whatsapp sent':'✉️ Email / WhatsApp sent','meeting fixed / done':'🤝 Meeting fixed / done',
+ 'person left company / retired':'🏃 Person left company / retired','rfq received — rates needed':'📄 RFQ received — rates needed',
+ 'rates shared — awaiting feedback':'💰 Rates shared — awaiting feedback','ringing / no answer':'📵 Ringing / no answer',
+ 'switched off':'🔌 Switched off','unavailable (travel/meeting)':'🏥 Unavailable (travel/meeting/hospital)',
+ 'won — first load received':'🎯 WON — first load received','will share spot inquiries':'🛄 Will share spot inquiries',
+ 'wrong number / invalid':'☎️ Wrong number',
+};
+function mapOutcomeText(raw){
+ if(!raw)return'';
+ return OUTCOME_TEXT_MAP[raw.trim().toLowerCase()]||raw.trim();
+}
+// Parses a "Pipeline Stage" style column from a transaction-history export,
+// e.g. "Stage 6 — Negotiation Initiated", "Stage 8 — WON / Active",
+// "OUT — DEAD (...)", "PRE-FUNNEL — Not yet connected".
+function parsePipelineStageText(raw){
+ const t=String(raw||'').trim();
+ if(/^OUT\s*—?\s*BAD DATA/i.test(t))return{status:'BAD DATA',stage:1,stageStatus:'Initiated'};
+ if(/^OUT\s*—?\s*DEAD/i.test(t))return{status:'DEAD',stage:1,stageStatus:'Initiated'};
+ if(/^PRE-?FUNNEL/i.test(t))return{status:'ACTIVE',stage:0,stageStatus:'Initiated'};
+ const m=t.match(/Stage\s*(\d)/i);
+ if(m){
+  const n=Math.max(0,Math.min(8,+m[1]));
+  return{status:'ACTIVE',stage:n,stageStatus:n===0?'Initiated':'Completed'}; // historical data describes a stage already reached
+ }
+ return{status:'ACTIVE',stage:1,stageStatus:'Initiated'};
+}
+// Parses a bare "29-Jul" style date (no year, as portal exports use) into
+// an ISO date string, assuming the current year unless that lands in the future.
+function parseHistDate(raw){
+ const t=String(raw||'').trim();
+ const m=t.match(/^(\d{1,2})[-\s]([A-Za-z]{3})/);
+ if(!m)return'';
+ const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+ const mo=months[m[2].toLowerCase()];
+ if(mo===undefined)return'';
+ let y=new Date().getFullYear();
+ let d=new Date(y,mo,+m[1]);
+ if(d>new Date())d=new Date(y-1,mo,+m[1]);
+ return todayKey(d);
+}
+function importRows(rows,fname,asDead){
+ const byPhone=new Map(),byEmail=new Map(),byCompany=new Map();
+ LIVE_LEADS.forEach(l=>{const p=p10(l.mob);if(p)byPhone.set(p,l);if(l.em)byEmail.set(l.em.toLowerCase(),l);
+  if(!p&&!l.em&&l.co)byCompany.set(l.co.trim().toLowerCase(),l); // only used as a last-resort key when there's truly nothing else to match on
+ });
+ let maxId=Math.max(0,...LIVE_LEADS.map(l=>l.id));let added=0,updated=0;
+ rows.forEach(r=>{
+  const co=pick(r,['company','account','organisation','organization']);
+  const name=pick(r,['contact','name','person']);
+  if(!co&&!name)return;
+  const mobRaw=pick(r,['mobile','phone','number','cell']);
+  const mob=mobRaw.split('/')[0].trim(); // multiple numbers separated by "/" — first is primary, rest kept in history
+  let em=pick(r,['email','mail']);
+  if(!em){ // sometimes a portal export has the email sitting in the wrong column entirely
+   const EMAIL_RE=/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+   for(const v of Object.values(r)){const m=EMAIL_RE.exec(String(v||''));if(m){em=m[0];break;}}
+  }
+  const p=p10(mob);
+  let existingLead=(p&&byPhone.get(p))||(em&&byEmail.get(em.toLowerCase()));
+  if(!existingLead&&!p&&!em&&co)existingLead=byCompany.get(co.trim().toLowerCase()); // no phone/email at all on either side — fall back to company name
+
+  let loc=pick(r,['location','city','state']);
+  if(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(loc))loc=''; // that "location" was actually an email — don't keep it as a fake city
+
+  const stageText=pick(r,['pipeline stage','stage']);
+  const parsed=stageText?parsePipelineStageText(stageText):{status:'ACTIVE',stage:0,stageStatus:'Initiated'};
+  const outcomeRaw=pick(r,['latest outcome','outcome']);
+  const remarkLatest=pick(r,['latest remark']);
+  const remarkHist=pick(r,['remark history']);
+  const nextStep=pick(r,['next step']);
+  const lastActivity=pick(r,['last activity']);
+  const desig=pick(r,['desig','title','role','position']);
+  const industry=pick(r,['industry','sector']);
+  const camp=pick(r,['source of lead','source','campaign']);
+
+  let hist=remarkHist?remarkHist.split('||').map(s=>s.trim()).filter(Boolean).join('\n'):'';
+  if(mobRaw.includes('/'))hist=(hist?hist+'\n':'')+'All numbers on file: '+mobRaw;
+  if(nextStep)hist=(hist?hist+'\n':'')+'Next step (from import): '+nextStep;
+
+  if(existingLead){
+   // Already have this lead (matched by phone or email) — refresh it with whatever
+   // this file now says, rather than silently skipping. Only overwrite a field if
+   // the new row actually has a value for it, so a sparser re-upload can't blank
+   // out data that was already there.
+   if(co)existingLead.co=co;
+   if(name)existingLead.name=name;
+   if(desig)existingLead.desig=desig;
+   if(loc)existingLead.loc=loc;
+   if(industry)existingLead.industry=industry;
+   if(camp)existingLead.camp=camp;
+   if(mob)existingLead.mob=mob;
+   if(em)existingLead.em=em;
+   const stageChanged=stageText&&(existingLead.stage!==parsed.stage||existingLead.stageStatus!==parsed.stageStatus);
+   if(stageText){existingLead.status=parsed.status;existingLead.stage=parsed.stage;existingLead.stageStatus=parsed.stageStatus;}
+   if(stageChanged)existingLead.stageDate=todayKey(); // only reset the red-flag clock if the stage genuinely moved
+   if(outcomeRaw)existingLead.outcome=mapOutcomeText(outcomeRaw);
+   if(remarkLatest)existingLead.remarks=remarkLatest;
+   if(hist)existingLead.hist=hist;
+   if(lastActivity){const d=parseHistDate(lastActivity);if(d)existingLead.lastCall=d;}
+   updated++;
+  }else{
+   const newLead={id:++maxId,camp:asDead?'Dead client revival':(camp||('Import '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'}))),
+    co,name,desig,loc,industry,mob,em,sat:true,hist,
+    status:asDead?'DEAD':parsed.status,stage:asDead?0:parsed.stage,stageStatus:asDead?'Initiated':parsed.stageStatus,stageDate:todayKey(),
+    revivalStage:asDead?0:undefined,revivalDate:asDead?todayKey():undefined,revivalPriority:asDead?'high':undefined,
+    outcome:mapOutcomeText(outcomeRaw),remarks:remarkLatest,nextDate:'',lastCall:parseHistDate(lastActivity),src:'import'};
+   LIVE_LEADS.push(newLead);
+   if(p)byPhone.set(p,newLead);if(em)byEmail.set(em.toLowerCase(),newLead); // so a duplicate later in this same file matches this one too
+   if(!p&&!em&&co)byCompany.set(co.trim().toLowerCase(),newLead);
+   added++;
+  }
+ });
+ applyDataMode();saveDB('leads');
+ $('#impPrev').innerHTML='<div class="note" style="margin-top:10px">✅ <b>'+added+'</b> new leads added, <b>'+updated+'</b> existing leads updated (matched by phone/email) from '+esc(fname)+'.</div>';
+ logAct(null,'IMPORT',fname,added+' added, '+updated+' updated');toast(added+' added, '+updated+' updated ✓');render();
+}
+function addOne(){
+ const g=k=>$('#f_'+k).value.trim();
+ if(!g('co')&&!g('name')){toast('Company or contact name required');return;}
+ const maxId=Math.max(0,...LIVE_LEADS.map(l=>l.id));
+ const stageVal=g('stage');
+ const stage=stageVal?+stageVal.split('|')[0]:0;
+ const stageStatus=stageVal?stageVal.split('|')[1]:'Initiated';
+ const next=g('next');
+ LIVE_LEADS.push({id:maxId+1,camp:g('camp')||'Manual add',co:g('co'),name:g('name'),desig:g('desig'),loc:g('loc'),mob:g('mob'),em:g('em'),industry:g('industry'),sat:true,
+  hist:next?'Next step (from manual add): '+next:'',status:'ACTIVE',stage,stageStatus,stageDate:todayKey(),outcome:g('outcome'),remarks:g('remarks'),nextDate:'',lastCall:'',src:'manual'});
+ applyDataMode();saveDB('leads');logAct(null,'IMPORT','Manual add',g('co'));toast('Lead added ✓');go('leads');
+}
+function addDeadLead(){
+ const g=k=>{const el=$('#f_'+k);return el?el.value.trim():'';};
+ if(!g('dco')&&!g('dname')){toast('Company or contact name required');return;}
+ const maxId=Math.max(0,...LIVE_LEADS.map(l=>l.id));
+ LIVE_LEADS.push({id:maxId+1,camp:'Dead client revival',co:g('dco'),name:g('dname'),desig:g('ddesig'),loc:g('dloc'),mob:g('dmob'),em:g('dem'),industry:g('dindustry'),sat:true,
+  hist:g('dreason')?'Why dead: '+g('dreason'):'',status:'DEAD',stage:0,stageStatus:'Initiated',stageDate:todayKey(),revivalStage:0,revivalDate:todayKey(),revivalPriority:'high',
+  outcome:'',remarks:'',nextDate:'',lastCall:'',src:'manual'});
+ applyDataMode();saveDB('leads');logAct(null,'IMPORT','Added dead client for revival',g('dco'));toast('Added to Dead Revival ✓');go('revival');
+}
+function downloadTemplate(){
+ const head=['Company','Contact','Designation','Mobile','Email','Location','Industry','Source of lead'];
+ const blob=new Blob([head.join(',')+'\n'],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BRL_lead_upload_template.csv';a.click();
+}
+function downloadFullTemplate(){
+ const head=['Company','Contact','Designation','Mobile','Email','Location','Industry','Source of lead','Pipeline Stage','Latest Outcome','Latest Remark','Remark History','Last Activity','Next Step'];
+ const example=['Example Co','Jane Doe','Manager','9876543210','jane@example.com','Mumbai','Chemicals','Jul tracker','Stage 6 — Negotiation Initiated','Rates shared — awaiting feedback','Awaiting their feedback on rates','20-Jul: RFQ received || 25-Jul: Rates shared','25-Jul','Follow up on rates'];
+ const blob=new Blob([head.join(',')+'\n'+example.map(v=>'"'+v.replace(/"/g,'""')+'"').join(',')+'\n'],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BRL_transaction_history_template.csv';a.click();
+}
+function exportCSV(){
+ const head=['Source of lead','Company','Contact','Designation','Location','Industry','Mobile','Email','SatOK','Status','Stage','Stage Status','First Load Moved','Response','Remarks','NextDate','History'];
+ const rows=DB.leads.map(L=>{const stg=L.stage??0;const stgLabel=stg===0?'0 — Fresh':stg+' — '+FUNNEL_STAGES[stg-1];return[L.camp,L.co,L.name,L.desig,L.loc,L.industry,L.mob,L.em,L.sat?'Yes':'No',L.status,stgLabel,L.stageStatus||'Initiated',L.firstLoadMoved||'',L.outcome,L.remarks,L.nextDate,L.hist].map(x=>'"'+String(x||'').replace(/"/g,'""')+'"').join(',');});
+ const blob=new Blob([head.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BRL_leads_'+todayKey()+'.csv';a.click();
+ logAct(null,'EXPORT','CSV',DB.leads.length+' leads');
+}
+/* ================= ACTIVITY ================= */
+let ACTF='';
+function vActivity(){
+ const rows=DB.activity.slice().reverse().filter(a=>!ACTF||a.ch===ACTF).slice(0,300);
+ return '<h2 class="sec" style="margin-top:0">Activity log <small>every call tap, email, WhatsApp and outcome — auto-recorded</small></h2>'+
+ '<div class="toolrow">'+['','CALL','EMAIL','WHATSAPP','OUTCOME','IMPORT'].map(c=>'<span class="pill '+(ACTF===c?'on':'')+'" onclick="ACTF=\''+c+'\';render()">'+(c||'All')+'</span>').join('')+'</div>'+
+ '<table><thead><tr><th>When</th><th>Lead</th><th>Channel</th><th>Detail</th></tr></thead><tbody>'+
+ rows.map(a=>'<tr><td style="white-space:nowrap">'+new Date(a.t).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</td>'+
+ '<td><b>'+esc(a.co)+'</b><br><small style="color:var(--slate)">'+esc(a.name)+'</small></td><td>'+a.ch+'</td><td style="font-size:12px">'+esc(a.ty)+' '+esc(a.dt)+'</td></tr>').join('')+
+ '</tbody></table>';
+}
+/* ================= SETTINGS ================= */
+function vSettings(){
+ const s=DB.settings;
+ const f=(k,l,ph)=>'<div class="frow"><label>'+l+'</label><input value="'+esc(s[k])+'" placeholder="'+(ph||'')+'" onchange="DB.settings[\''+k+'\']=this.value;saveDB(\'settings\')"></div>';
+ const n=(k,l)=>'<div class="frow"><label>'+l+'</label><input type="number" value="'+s[k]+'" onchange="DB.settings[\''+k+'\']=+this.value;saveDB(\'settings\');render()"></div>';
+ return '<div class="grid2">'+
+ '<div class="card"><h3>🚩 Pipeline red-flags</h3>'+
+ '<div class="note">A lead gets flagged on the Action List when a stage is marked Completed but the next stage hasn\'t been Initiated within this many days.</div>'+
+ f('redFlagDays','Stall threshold (days)','3')+
+ '<div class="note">Separately: Agreement Signed leads with no "First load moved" date get flagged after this many days.</div>'+
+ f('wonFlagDays','No-load threshold (days)','30')+
+ '</div>'+
+ '<div class="card"><h3>🧪 Data source</h3>'+
+ '<div class="note">LIVE shows only leads you added yourself (via Import or Add) — the original 150-lead sample stays hidden here. DEMO shows the original 150-lead sample only — nothing you do in DEMO is saved, and it never touches your real data.</div>'+
+ '<div style="display:flex;gap:8px;margin-top:10px">'+
+ '<button class="btn sm '+(s.demoMode?'ghost':'')+'" onclick="setDataMode(\'live\')">✅ Live</button>'+
+ '<button class="btn sm '+(s.demoMode?'':'ghost')+'" onclick="setDataMode(\'demo\')">🧪 Demo</button>'+
+ '</div></div>'+
+ '<div class="card"><h3>🔧 Recover a hidden lead</h3>'+
+ '<div class="note">Leads added before the LIVE/DEMO split above may still be hidden from LIVE even though they\'re not seed data. Search by company name or mobile number to bring one back into view.</div>'+
+ '<div style="display:flex;gap:8px;margin-top:8px"><input id="recoverQ" placeholder="Company name or mobile number" style="flex:1"><button class="btn sm ghost" onclick="recoverLead()">Find &amp; show</button></div>'+
+ '<div id="recoverResult" class="note" style="margin-top:6px"></div></div>'+
+ '<div class="card"><h3>👥 People</h3>'+f('jagrutiEmail','Jagruti email')+f('suyashhEmail','Suyashh email')+f('ratesTeam','Rates team emails (comma-sep)')+
+ '<h3 style="margin-top:16px">🎯 Daily targets</h3><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+n('tC','Connected')+n('tE','Emails')+n('tW','WhatsApp')+n('tM','Meetings')+n('tR','RFQs')+'</div></div>'+
+ '<div class="card"><h3>💬 WhatsApp (optional auto-send)</h3>'+
+ '<div class="frow"><label>Send via</label><select onchange="DB.settings.waProvider=this.value;saveDB(\'settings\');render()">'+
+ ['none|Manual (WhatsApp Web / app)','maytapi|Maytapi','mas|Message Auto Sender'].map(x=>{const[k,l]=x.split('|');return '<option value="'+k+'" '+(s.waProvider===k?'selected':'')+'>'+l+'</option>';}).join('')+
+ '</select></div>'+
+ (s.waProvider==='maytapi'?(f('maytapiProduct','Maytapi Product ID','<from Maytapi console>')+f('maytapiPhone','Maytapi Phone ID')+f('maytapiKey','Maytapi API key')):'')+
+ (s.waProvider==='mas'?(f('masAuth','Authorization header value','Basic ...')+'<div class="note">Paste the full value that goes after "Authorization:" (e.g. <code>Basic xxxx</code>) — from your Message Auto Sender account. Treat this like a password.</div>'):'')+
+ '<div class="frow" style="margin-top:12px"><label>🧪 Test send</label>'+
+ '<div style="display:flex;gap:8px"><input id="testMob" placeholder="Test mobile, e.g. 98765 43210" style="flex:1"><button class="btn sm ghost" onclick="testWA()">Send test</button></div>'+
+ '<div id="testResult" class="note" style="margin-top:6px">Sends a one-off test message via whatever\'s picked in "Send via" above, and shows the raw result here — use this to confirm a provider is actually working before relying on it for real leads.</div></div>'+
+ '<div class="note">With a provider selected and configured, WhatsApp buttons try direct auto-send. If the browser blocks the call (CORS), keys are blank, or "Manual" is selected, the button opens WhatsApp with the message pre-typed instead — one tap to send, still fully logged either way.</div>'+
+ '</div>'+
+ '<div class="card"><h3>🌐 Website Inquiry</h3>'+
+ '<div class="note">In Google Sheets: File → Share → Publish to web → select the sheet tab → format <b>CSV</b> → Publish. Paste that link below.</div>'+
+ f('inquirySheetUrl','Published CSV link','https://docs.google.com/spreadsheets/d/.../pub?output=csv')+
+ '</div>'+
+ '<div class="card"><h3>🗺️ Field Tasks (Apps Script)</h3>'+
+ '<div class="note">Paste your Apps Script Web App URL — this sheet supports read AND write (add/update rows).</div>'+
+ f('fieldTaskScriptUrl','Apps Script Web App URL','https://script.google.com/macros/s/.../exec')+
+ '</div>'+
+ '<div class="card"><h3>🔔 Auto-notifications (Morning + EOD)</h3>'+
+ '<div class="note">Sends a WhatsApp update automatically every day — Morning (Due Today / Overdue / Fresh Dial) and EOD (today\'s dials, connects, emails, WhatsApp, meetings, RFQs). Runs on the server itself, so it fires even if nobody has the app open.</div>'+
+ '<div style="display:flex;gap:8px;margin:10px 0">'+
+ '<button class="btn sm '+(s.notifyEnabled?'':'ghost')+'" onclick="DB.settings.notifyEnabled=true;saveDB(\'settings\');render()">🔔 ON — auto-send daily</button>'+
+ '<button class="btn sm '+(s.notifyEnabled?'ghost':'')+'" onclick="DB.settings.notifyEnabled=false;saveDB(\'settings\');render()">🔕 OFF — don\'t auto-send</button>'+
+ '</div>'+
+ f('notifyNumber','Notify this number','98765 43210')+
+ '<div class="grid2" style="margin-top:4px">'+
+ '<div class="frow"><label>Morning send time</label><input type="time" value="'+esc(s.morningTime||'09:00')+'" onchange="DB.settings.morningTime=this.value;saveDB(\'settings\')"></div>'+
+ '<div class="frow"><label>EOD send time</label><input type="time" value="'+esc(s.eodTime||'18:00')+'" onchange="DB.settings.eodTime=this.value;saveDB(\'settings\')"></div>'+
+ '</div>'+
+ '<div style="display:flex;gap:8px;margin-top:10px">'+
+ '<button class="btn sm ghost" onclick="sendMorningNotification()">📤 Test Morning now</button>'+
+ '<button class="btn sm ghost" onclick="sendEodNotification()">📤 Test EOD now</button>'+
+ '</div>'+
+ '<div id="notifyResult" class="note" style="margin-top:6px"></div>'+
+ '</div>'+
+ '<div class="card"><h3>🧠 Due List Email — with AI calling scripts</h3>'+
+ '<div class="note">Emails today\'s Due list to your team, with a short calling script per lead generated by AI (Claude or Groq), tailored to that lead\'s industry, current stage, and history. Always CC\'d to Suyashh (uses the email set in People above). Capped at the first '+15+' due leads per email to keep it a reasonable length.</div>'+
+ '<div style="display:flex;gap:8px;margin:10px 0">'+
+ '<button class="btn sm '+(s.dueListEmailEnabled?'':'ghost')+'" onclick="DB.settings.dueListEmailEnabled=true;saveDB(\'settings\');render()">🔔 ON — auto-send daily</button>'+
+ '<button class="btn sm '+(s.dueListEmailEnabled?'ghost':'')+'" onclick="DB.settings.dueListEmailEnabled=false;saveDB(\'settings\');render()">🔕 OFF — don\'t auto-send</button>'+
+ '</div>'+
+ '<div class="frow"><label>Send to (comma-separated for multiple)</label><input value="'+esc(s.dueListEmailTo||'')+'" placeholder="jagruti@bestroadways.com, someone.else@bestroadways.com" onchange="DB.settings.dueListEmailTo=this.value;saveDB(\'settings\')"></div>'+
+ '<div class="frow"><label>CC</label><input value="'+esc(s.dueListEmailCC!==undefined?s.dueListEmailCC:(s.suyashhEmail||'')).replace(/"/g,'&quot;')+'" placeholder="sg@bestroadways.com" onchange="DB.settings.dueListEmailCC=this.value;saveDB(\'settings\')"></div>'+
+ '<div class="frow"><label>Send time</label><input type="time" value="'+esc(s.dueListEmailTime||'08:30')+'" onchange="DB.settings.dueListEmailTime=this.value;saveDB(\'settings\')"></div>'+
+ '<div class="frow"><label>AI provider</label><select onchange="DB.settings.aiProvider=this.value;saveDB(\'settings\');render()">'+
+ ['|Select a provider…','claude|Claude (Anthropic)','groq|Groq (fast + free tier)'].map(x=>{const[k,l]=x.split('|');return '<option value="'+k+'" '+(s.aiProvider===k?'selected':'')+'>'+l+'</option>';}).join('')+
+ '</select></div>'+
+ (s.aiProvider?f((s.aiProvider==='claude'?'aiApiKey':'aiApiKey'),(s.aiProvider==='claude'?'Claude API key':'Groq API key'),'sk-...'):'')+
+ (s.aiProvider?f('aiModel','Model (optional override)',s.aiProvider==='claude'?'default: claude-3-5-haiku-20241022':'default: llama-3.1-8b-instant'):'')+
+ '<div style="display:flex;gap:8px;margin-top:10px">'+
+ '<button class="btn sm ghost" onclick="testDueListEmail()">📤 Test now</button>'+
+ '</div>'+
+ '<div id="dueListEmailResult" class="note" style="margin-top:6px"></div>'+
+ '</div>'+
+ '<div class="card"><h3>✉️ Email sending (for real PDF attachments)</h3>'+
+ '<div class="note">The Profile email button normally opens a draft in your mail app — that method can never attach a real file (a browser/OS limit, not something any app can work around). Fill this in once to send the profile PDF as a genuine attachment instead, straight from the server.</div>'+
+ f('smtpHost','SMTP host','e.g. smtp.gmail.com')+f('smtpPort','SMTP port','587 (or 465)')+
+ f('smtpUser','SMTP username','usually the full email address')+f('smtpPass','SMTP password / app password','')+
+ f('smtpFrom','"From" address shown to recipients','jagruti.bhandari@bestroadways.com')+
+ '<div class="note">For Gmail/Workspace: turn on 2-Step Verification on that account, then create an <b>App Password</b> (Google Account → Security → App passwords) and paste that here — not the normal login password. Host <code>smtp.gmail.com</code>, port <code>587</code>.</div>'+
+ '<div class="frow" style="margin-top:12px"><label>🧪 Test send</label>'+
+ '<div style="display:flex;gap:8px"><input id="testEmailTo" placeholder="Test email address" style="flex:1"><button class="btn sm ghost" onclick="testEmailPdf()">Send test</button></div>'+
+ '<div id="testEmailResult" class="note" style="margin-top:6px">Sends a real test PDF to the address above using the SMTP details entered — confirms the credentials actually work before you rely on it for real leads.</div></div>'+
+ '</div>'+
+ '<div class="card"><h3>📄 Profile</h3>'+f('profileUrl','Company profile link (Drive URL, anyone-with-link)','https://drive.google.com/…')+
+ '<div class="note">This link rides inside profile emails and WhatsApp messages.</div>'+
+ '<h3 style="margin-top:16px">🗄 Data</h3>'+
+ '<button class="btn ghost" onclick="exportCSV()">⬇ Backup all leads (CSV)</button> '+
+ '<button class="btn ghost" onclick="if(confirm(\'Reset to the 150-lead seed? Your added leads and activity will be erased.\')){LIVE_LEADS=SEED.map(x=>({...x,src:\'seed\'}));LIVE_ACTIVITY=[];applyDataMode();saveDB();render();toast(\'Reset done\');}">↺ Reset to seed</button>'+
+ (storageOK?'<div class="note" style="margin-top:8px">✅ Auto-saving to persistent storage — data survives closing this tab.</div>':'<div class="note" style="margin-top:8px;color:var(--red)">⚠ Persistent storage unavailable here — changes live only in this session. Export CSV before closing.</div>')+
+ '</div></div>'+
+ (IS_ADMIN?vUserMgmt():'')+
+ '<div class="card" style="margin-top:16px"><h3>✉️ Message templates</h3>'+
+ '<div class="note">Edit the wording for every call/email/WhatsApp send below — changes apply immediately to every lead. Use these placeholders anywhere in the text: <code>{name} {co} {mob} {desig} {loc} {profileUrl} {remarks} {hist} {sig}</code> (<code>{sig}</code> is the standard email signature block).</div>'+
+ '<button class="btn sm ghost" style="margin-top:8px" onclick="if(confirm(\'Reset ALL templates to the built-in defaults? Your edits will be lost.\')){DB.settings.tpl=JSON.parse(JSON.stringify(DEFAULT_TPL));saveDB(\'settings\');render();toast(\'Templates reset ✓\');}">↺ Reset all templates to default</button>'+
+ '<h4 style="margin-top:18px;color:var(--navy)">📧 Email</h4>'+
+ tplField('email','PROFILE','Profile email',true)+
+ tplField('email','CHASE','Chase (after profile)',true)+
+ tplField('email','RATES','Rates follow-up',true)+
+ tplField('email','MEETING','Meeting confirmation',true)+
+ tplField('email','THANKYOU','Thank-you',true)+
+ tplField('email','ESCALATE','Escalation to Suyashh (internal)',true)+
+ '<h4 style="margin-top:18px;color:var(--navy)">💬 WhatsApp</h4>'+
+ tplField('wa','PROFILE','Profile message',false)+
+ tplField('wa','FOLLOWUP','Follow-up message',false)+
+ tplField('wa','RATES','Rates reminder',false)+
+ tplField('wa','MEETING','Meeting confirmation',false)+
+ '</div>';
+}
+function tplField(scope,kind,label,hasSubject){
+ const t=tplStore()[scope][kind];
+ let h='<div class="frow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><label style="font-size:12px;color:var(--slate)">'+label+'</label>';
+ if(hasSubject){
+  h+='<input value="'+esc(t.s)+'" placeholder="Subject" style="margin-bottom:6px" onchange="DB.settings.tpl.'+scope+'.'+kind+'.s=this.value;saveDB(\'settings\')">';
+  h+='<textarea rows="5" onchange="DB.settings.tpl.'+scope+'.'+kind+'.b=this.value;saveDB(\'settings\')">'+esc(t.b)+'</textarea>';
+ }else{
+  h+='<textarea rows="4" onchange="DB.settings.tpl.'+scope+'.'+kind+'=this.value;saveDB(\'settings\')">'+esc(t)+'</textarea>';
+ }
+ h+='</div>';
+ return h;
+}
+function vUserMgmt(){
+ let h='<div class="card" style="margin-top:16px"><h3>👤 User management</h3>'+
+  '<div class="note">Only visible to the admin account. Add teammates who need their own login, or change a password.</div>';
+ if(USERS_LIST===null){
+  h+='<div class="note" style="margin-top:8px">Loading users…</div></div>';
+  return h;
+ }
+ h+='<table style="margin-top:10px"><thead><tr><th>Username</th><th>Type</th><th>Action</th></tr></thead><tbody>'+
+  USERS_LIST.map(u=>{
+   if(u.builtIn)return '<tr><td><b>'+esc(u.username)+'</b></td><td><span class="note">Built-in (set via .env)</span></td><td>—</td></tr>';
+   return '<tr><td><b>'+esc(u.username)+'</b></td><td><span class="note">Added</span></td><td>'+
+    '<div style="display:flex;gap:6px;align-items:center">'+
+    '<input id="pw_'+esc(u.username)+'" type="password" placeholder="New password" style="width:130px">'+
+    '<button class="btn sm ghost" onclick="changeUserPassword(\''+esc(u.username)+'\')">Set</button>'+
+    '<button class="btn sm ghost" style="color:var(--red);border-color:var(--red)" onclick="deleteUserAccount(\''+esc(u.username)+'\')">🗑</button>'+
+    '</div></td></tr>';
+  }).join('')+
+  '</tbody></table>'+
+  '<div class="frow" style="margin-top:12px"><label>➕ Add a new user</label>'+
+  '<div style="display:flex;gap:6px"><input id="newUserName" placeholder="Username" style="flex:1"><input id="newUserPass" type="password" placeholder="Password (6+ chars)" style="flex:1">'+
+  '<button class="btn sm ghost" onclick="addUser()">Add</button></div></div>'+
+  '<div id="userMgmtResult" class="note" style="margin-top:6px"></div>'+
+  '</div>';
+ return h;
+}
+async function addUser(){
+ const box=$('#userMgmtResult');
+ const username=($('#newUserName').value||'').trim();
+ const password=$('#newUserPass').value||'';
+ if(!username||!password){box.style.color='var(--red)';box.textContent='Enter both a username and password.';return;}
+ try{
+  const r=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const j=await r.json();
+  if(r.ok){box.style.color='var(--green)';box.textContent='✅ User "'+username+'" added.';$('#newUserName').value='';$('#newUserPass').value='';loadUsersList();}
+  else{box.style.color='var(--red)';box.textContent='❌ '+(j.error||'Failed to add user.');}
+ }catch(e){box.style.color='var(--red)';box.textContent='❌ Request failed — network error.';}
+}
+async function changeUserPassword(username){
+ const box=$('#userMgmtResult');
+ const input=$('#pw_'+username);
+ const password=input?input.value:'';
+ if(!password){box.style.color='var(--red)';box.textContent='Type a new password for '+username+' first.';return;}
+ try{
+  const r=await fetch('/api/users/'+encodeURIComponent(username)+'/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+  const j=await r.json();
+  if(r.ok){box.style.color='var(--green)';box.textContent='✅ Password updated for '+username+'.';if(input)input.value='';}
+  else{box.style.color='var(--red)';box.textContent='❌ '+(j.error||'Failed to update password.');}
+ }catch(e){box.style.color='var(--red)';box.textContent='❌ Request failed — network error.';}
+}
+async function deleteUserAccount(username){
+ if(!confirm('Remove user "'+username+'"? They will no longer be able to log in.'))return;
+ const box=$('#userMgmtResult');
+ try{
+  const r=await fetch('/api/users/'+encodeURIComponent(username),{method:'DELETE'});
+  const j=await r.json();
+  if(r.ok){box.style.color='var(--green)';box.textContent='✅ User "'+username+'" removed.';loadUsersList();}
+  else{box.style.color='var(--red)';box.textContent='❌ '+(j.error||'Failed to remove user.');}
+ }catch(e){box.style.color='var(--red)';box.textContent='❌ Request failed — network error.';}
+}
+/* ================= EOD ================= */
+function eodText(){
+ const s=todayStats(),T=DB.settings,q=queues();
+ const row=(l,a,t)=>l+': '+a+' / '+t+' ('+(a-t>=0?'+':'')+(a-t)+')';
+ const hot=DB.activity.filter(a=>new Date(a.t).toISOString().slice(0,10)===todayKey()&&a.ch==='OUTCOME'&&/RFQ received|Meeting|WON/.test(a.ty)).map(a=>'• '+a.ty.split(' ')[0]+' '+a.co);
+ return 'EOD REPORT — '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+' (Jagruti Bhandari)\n\n'+
+ row('Connected calls',s.conn,T.tC)+'\n'+row('Emails',s.em,T.tE)+'\n'+row('WhatsApps',s.wa,T.tW)+'\n'+
+ row('Meetings',s.mtg,T.tM)+'\n'+row('RFQs',s.rfq,T.tR)+'\n\nTotal dial attempts: '+s.dials+
+ '\nOverdue follow-ups pending: '+q.over.length+
+ (hot.length?'\n\nHot items today:\n'+hot.join('\n'):'')+'\n\n— auto-compiled by BRL Command Center';
+}
+function eodReport(){
+ window.open('mailto:'+DB.settings.suyashhEmail+'?cc='+encodeURIComponent(DB.settings.jagrutiEmail)+'&subject='+encodeURIComponent('📊 EOD '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'}))+'&body='+encodeURIComponent(eodText()));
+ logAct(null,'EMAIL','EOD report',DB.settings.suyashhEmail);
+}
+function copyEOD(){navigator.clipboard.writeText(eodText()).then(()=>toast('EOD text copied ✓'));}
+/* ================= BOOT ================= */
+window.go=go;window.openDrawer=openDrawer;window.closeDrawer=closeDrawer;window.doCall=doCall;window.doEmail=doEmail;window.doWA=doWA;
+window.setOutcome=setOutcome;window.setNext=setNext;window.delLead=delLead;window.addOne=addOne;window.exportCSV=exportCSV;
+window.eodReport=eodReport;window.copyEOD=copyEOD;window.stageFilter=stageFilter;
+let CURRENT_USER='',IS_ADMIN=false,USERS_LIST=null;
+async function loadMe(){
+ try{const r=await fetch('/api/me');const j=await r.json();CURRENT_USER=j.user||'';IS_ADMIN=!!j.isAdmin;if(IS_ADMIN)loadUsersList();}catch(e){}
+}
+async function loadUsersList(){
+ try{const r=await fetch('/api/users');const j=await r.json();USERS_LIST=j.users;render();}catch(e){}
+}
+loadDB().then(render);
+loadInquiries(true);loadTasks(true);
+window.addEventListener('online',()=>{loadInquiries(true);loadTasks(true);NEXT_REFRESH_IN=300;});
+setInterval(()=>{loadInquiries(true);loadTasks(true);NEXT_REFRESH_IN=300;},5*60*1000);
+setInterval(()=>{
+ NEXT_REFRESH_IN=Math.max(0,NEXT_REFRESH_IN-1);
+ const el=$('#refreshTimer');
+ if(el){const m=Math.floor(NEXT_REFRESH_IN/60),s=NEXT_REFRESH_IN%60;el.textContent='⏱ next auto-refresh in '+m+':'+String(s).padStart(2,'0');}
+},1000);
+loadMe().then(render);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
+</script>
+</body></html>
